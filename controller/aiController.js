@@ -79,12 +79,8 @@ exports.deepSeekChat = async (req, res) => {
   console.log('Received deepSeekChat request:', { message, userId, sessionId });
 
   const openaiApiKey = process.env.OPENAI_API_KEY;
-
-  if (!openaiApiKey) {
-    console.error('ERROR: OPENAI_API_KEY environment variable missing!');
-    return res.status(500).json({ message: 'Server misconfiguration: missing OpenAI API key' });
-  }
-  console.log('OPENAI_API_KEY found.');
+     
+  console.log(process.env.OPENAI_API_KEY,'OPENAI_API_KEY found.');
 
   if (!message || !userId) {
     console.log('Missing message or userId');
