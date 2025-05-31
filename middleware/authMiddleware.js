@@ -16,7 +16,7 @@ module.exports = async (req, res, next) => {
     console.log('Received token:', token);
 
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, 'a3b5c1d9e8f71234567890abcdef1234567890abcdefabcdef1234567890aber');
 
     // Fetch tokenVersion from DB for this user
     const [userRows] = await db.query('SELECT tokenVersion FROM users WHERE id = ?', [decoded.id]);
