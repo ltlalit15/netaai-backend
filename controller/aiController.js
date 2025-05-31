@@ -76,7 +76,13 @@ exports.getSessionMessages = async (req, res) => {
  exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId } = req.body;
 
-  if (!message || !userId) return res.status(400).json({ message: 'Missing message or userId' });
+  console.log('Received deepSeekChat request:', { message, userId, sessionId });
+  console.log('OPENAI_API_KEY is', process.env.OPENAI_API_KEY ? 'Loaded' : 'Missing or Undefined');
+
+  if (!message || !userId) {
+    console.log('Missing message or userId');
+    return res.status(400).json({ message: 'Missing message or userId' });
+  }
 
   let currentSessionId = sessionId;
 
@@ -89,6 +95,7 @@ exports.getSessionMessages = async (req, res) => {
         [userId, title]
       );
       currentSessionId = result.insertId;
+      console.log('Created new chat session with ID:', currentSessionId);
     }
 
     // Save user message linked to session
@@ -96,17 +103,24 @@ exports.getSessionMessages = async (req, res) => {
       `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
       [userId, 'user', message, currentSessionId]
     );
+    console.log('Saved user message to DB');
 
     // Call OpenAI
-    const openaiRes = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: message }],
-    }, {
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+    const openaiRes = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: message }],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        }
       }
-    });
+    );
+
+    console.log('OpenAI API response received');
 
     const aiReply = openaiRes.data.choices[0].message.content;
 
@@ -115,11 +129,13 @@ exports.getSessionMessages = async (req, res) => {
       `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
       [userId, 'assistant', aiReply, currentSessionId]
     );
+    console.log('Saved AI reply to DB');
 
     res.json({ reply: aiReply, sessionId: currentSessionId });
   } catch (err) {
-    console.error(err.response?.data || err.message);
+    console.error('Error in deepSeekChat:', err.response?.data || err.message);
     res.status(500).json({ message: 'AI error' });
   }
 };
+
 
