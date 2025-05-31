@@ -115,8 +115,8 @@ exports.getSessionMessages = async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          console.log('OPENAI_API_KEY:', OPENAI_API_KEY ? 'Found' : 'Not Found'),
           console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'Found' : 'Not Found');
+
 
           'Content-Type': 'application/json',
         }
