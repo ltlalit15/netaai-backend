@@ -79,7 +79,8 @@ exports.deepSeekChat = async (req, res) => {
   console.log('Received deepSeekChat request:', { message, userId, sessionId });
 
   const openaiApiKey = process.env.OPENAI_API_KEY;
-     
+
+  const decoded = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
   console.log(process.env.OPENAI_API_KEY,'OPENAI_API_KEY found.');
 
   if (!message || !userId) {
@@ -117,7 +118,7 @@ exports.deepSeekChat = async (req, res) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${openaiApiKey}`,
+          Authorization: `Bearer ${decoded}`,
           'Content-Type': 'application/json',
         }
       }
