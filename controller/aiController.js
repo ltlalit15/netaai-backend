@@ -31,7 +31,7 @@ exports.deepSeekChat = async (req, res) => {
       messages: [{ role: "user", content: message }],
     }, {
       headers: {
-        Authorization: `Bearer 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`,
+        Authorization: `Bearer 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`,
         'Content-Type': 'application/json',
       }
     });
