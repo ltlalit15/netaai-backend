@@ -8,6 +8,10 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 const cloudinary = require('cloudinary').v2;
 
+
+const jwtSecret = 'a3b5c1d9e8f71234567890abcdef1234567890abcdefabcdef1234567890aber';
+
+
 // const storage = multer.diskStorage({
 //     destination: (req, file, cb) => {
 //         cb(null, './upload');  // Specify the folder where images will be stored
@@ -27,45 +31,44 @@ cloudinary.config({
   api_secret: 'p12EKWICdyHWx8LcihuWYqIruWQ'
 });
 //Register User
- const signUp = async (req, res) => {
-    try {
-        const { full_name, email, password, referredBy } = req.body;
-        console.log(req.body, "-------------");
+ 
+const signUp = async (req, res) => {
+  try {
+    const { full_name, email, password, referredBy } = req.body;
+    console.log(req.body, "-------------");
 
-        // Check if user already exists (by email)
-        const [existingUser] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (existingUser.length > 0) {
-            return res.status(400).json({ status: "false", message: 'User already exists with this email', data: [] });
-        }
-
-        // Hash Password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Insert new user into the database
-        const [result] = await db.query(
-            'INSERT INTO users (full_name, email, password, referredBy) VALUES (?, ?, ?, ?)', 
-            [full_name, email, hashedPassword, referredBy]
-        );
-
-        // Fetch the newly created user (excluding password)
-        const [newUser] = await db.query('SELECT id, full_name, email, referredBy FROM users WHERE id = ?', [result.insertId]);
-
-        // Generate JWT Token
-        const token = jwt.sign({ id: newUser[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        // Send response
-        res.status(201).json({
-            status: "true",
-            message: 'User registered successfully',
-            data: { ...newUser[0], token }
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+    // Check if user already exists
+    const [existingUser] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ status: "false", message: 'User already exists with this email', data: [] });
     }
-};
 
+    // Hash Password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new user
+    const [result] = await db.query(
+      'INSERT INTO users (full_name, email, password, referredBy) VALUES (?, ?, ?, ?)',
+      [full_name, email, hashedPassword, referredBy]
+    );
+
+    // Fetch new user (exclude password)
+    const [newUser] = await db.query('SELECT id, full_name, email, referredBy FROM users WHERE id = ?', [result.insertId]);
+
+    // Generate JWT token
+    const token = jwt.sign({ id: newUser[0].id }, jwtSecret, { expiresIn: '1h' });
+
+    res.status(201).json({
+      status: "true",
+      message: 'User registered successfully',
+      data: { ...newUser[0], token }
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 
 
@@ -381,7 +384,7 @@ const forgotPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists and get tokenVersion
+    // Get user by email
     const [user] = await db.query('SELECT id, email, password, full_name, tokenVersion FROM users WHERE email = ?', [email]);
     console.log(user);
 
@@ -389,20 +392,19 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({ status: "false", message: 'Invalid email or password', data: [] });
     }
 
-    // Compare password
+    // Check password
     const isMatch = await bcrypt.compare(password, user[0].password);
     if (!isMatch) {
       return res.status(400).json({ status: "false", message: 'Invalid email or password', data: [] });
     }
 
-    // Generate JWT Token (Include tokenVersion)
+    // Generate JWT token including tokenVersion
     const token = jwt.sign(
       { id: user[0].id, email: user[0].email, tokenVersion: user[0].tokenVersion },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: '1h' }
     );
 
-    // Prepare response data (remove password)
     const userData = {
       id: user[0].id.toString(),
       email: user[0].email,
