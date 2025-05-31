@@ -81,7 +81,7 @@ exports.deepSeekChat = async (req, res) => {
   const openaiApiKey = process.env.OPENAI_API_KEY;
 
   const decoded = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
-  console.log(process.env.OPENAI_API_KEY,'OPENAI_API_KEY found.');
+  console.log(decoded,'OPENAI_API_KEY found.');
 
   if (!message || !userId) {
     console.log('Missing message or userId');
