@@ -30,8 +30,8 @@ exports.deepSeekChat = async (req, res) => {
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: message }],
     }, {
-      headers: {
-        Authorization: `Bearer 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`,
+     headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       }
     });
