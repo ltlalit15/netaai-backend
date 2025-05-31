@@ -8,7 +8,7 @@ const path = require('path');
 const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
-const { createChatTable } = require('./controller/aiController');
+//const { createChatTable } = require('./controller/aiController');
 
 // ... other code ...
 
@@ -111,7 +111,7 @@ app.use(bodyParser.json());
 // Serve static files
 
 
-createChatTable();
+//createChatTable();
 
 app.use('/api/user', userRoutes);
 // app.use('/api/openai', openaiRoutes);
