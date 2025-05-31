@@ -73,7 +73,7 @@ exports.getSessionMessages = async (req, res) => {
 };
 
 // Updated chat endpoint to accept sessionId
- exports.deepSeekChat = async (req, res) => {
+exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId } = req.body;
 
   console.log('Received deepSeekChat request:', { message, userId, sessionId });
@@ -105,7 +105,10 @@ exports.getSessionMessages = async (req, res) => {
     );
     console.log('Saved user message to DB');
 
-    // Call OpenAI
+    // Debug print API key presence before calling OpenAI
+    console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'Found' : 'Not Found');
+
+    // Call OpenAI API
     const openaiRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -115,9 +118,6 @@ exports.getSessionMessages = async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'Found' : 'Not Found');
-
-
           'Content-Type': 'application/json',
         }
       }
@@ -140,5 +140,6 @@ exports.getSessionMessages = async (req, res) => {
     res.status(500).json({ message: 'AI error' });
   }
 };
+
 
 
