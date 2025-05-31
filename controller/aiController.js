@@ -77,7 +77,14 @@ exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId } = req.body;
 
   console.log('Received deepSeekChat request:', { message, userId, sessionId });
-  console.log('OPENAI_API_KEY is', process.env.OPENAI_API_KEY ? 'Loaded' : 'Missing or Undefined');
+
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+
+  if (!openaiApiKey) {
+    console.error('ERROR: OPENAI_API_KEY environment variable missing!');
+    return res.status(500).json({ message: 'Server misconfiguration: missing OpenAI API key' });
+  }
+  console.log('OPENAI_API_KEY found.');
 
   if (!message || !userId) {
     console.log('Missing message or userId');
@@ -87,7 +94,7 @@ exports.deepSeekChat = async (req, res) => {
   let currentSessionId = sessionId;
 
   try {
-    // Create new session if no sessionId provided
+    // Create session if not exists
     if (!currentSessionId) {
       const title = `Chat on ${new Date().toLocaleString()}`;
       const [result] = await db.query(
@@ -98,15 +105,12 @@ exports.deepSeekChat = async (req, res) => {
       console.log('Created new chat session with ID:', currentSessionId);
     }
 
-    // Save user message linked to session
+    // Save user message
     await db.query(
-      `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
+      "INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)",
       [userId, 'user', message, currentSessionId]
     );
     console.log('Saved user message to DB');
-
-    // Debug print API key presence before calling OpenAI
-    console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'Found' : 'Not Found');
 
     // Call OpenAI API
     const openaiRes = await axios.post(
@@ -117,7 +121,7 @@ exports.deepSeekChat = async (req, res) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json',
         }
       }
@@ -127,17 +131,18 @@ exports.deepSeekChat = async (req, res) => {
 
     const aiReply = openaiRes.data.choices[0].message.content;
 
-    // Save AI reply linked to session
+    // Save AI reply
     await db.query(
-      `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
+      "INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)",
       [userId, 'assistant', aiReply, currentSessionId]
     );
     console.log('Saved AI reply to DB');
 
     res.json({ reply: aiReply, sessionId: currentSessionId });
+
   } catch (err) {
     console.error('Error in deepSeekChat:', err.response?.data || err.message);
-    res.status(500).json({ message: 'AI error' });
+    res.status(500).json({ message: 'AI error', error: err.response?.data || err.message });
   }
 };
 
