@@ -5,66 +5,6 @@ const db = require('../config');
 require('dotenv').config();
 
 
-// Load dotenv only if running locally (not on Railway or similar)
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
-
-exports.deepSeekChat = async (req, res) => {
-  const { message, userId, sessionId } = req.body;
-
-  if (!message || !userId) {
-    return res.status(400).json({ message: 'Missing message or userId' });
-  }
-
-  // Debug: log the API key to verify if it is loaded (remove in production!)
-  console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Loaded" : "Missing");
-
-  let currentSessionId = sessionId;
-
-  try {
-    // Create new session if sessionId not provided
-    if (!currentSessionId) {
-      const title = `Chat on ${new Date().toLocaleString()}`;
-      const [result] = await db.query(
-        "INSERT INTO chat_sessions (user_id, title) VALUES (?, ?)",
-        [userId, title]
-      );
-      currentSessionId = result.insertId;
-    }
-
-    // Save user message linked to session
-    await db.query(
-      `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
-      [userId, 'user', message, currentSessionId]
-    );
-
-    // Call OpenAI Chat Completion API
-    const openaiRes = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: message }],
-    }, {
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      }
-    });
-
-    const aiReply = openaiRes.data.choices[0].message.content;
-
-    // Save AI reply linked to session
-    await db.query(
-      `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
-      [userId, 'assistant', aiReply, currentSessionId]
-    );
-
-    res.json({ reply: aiReply, sessionId: currentSessionId });
-
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).json({ message: 'AI error' });
-  }
-};
 
 
 exports.getHistory = async (req, res) => {
