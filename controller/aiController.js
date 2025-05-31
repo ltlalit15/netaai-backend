@@ -78,7 +78,7 @@ exports.deepSeekChat = async (req, res) => {
 
   console.log('Received deepSeekChat request:', { message, userId, sessionId });
 
-  const openaiApiKey = process.env.OPENAI_API_KEY;
+  const openaiApiKey ="c2stc3ZjYWNjdC1DUHR6Z2s2enYxOVZsSHFoOVBnQ1FfWnA1MFZmMWhoXzFfdElIVy1adlF1cmlyS3BVMDZ2X3RLY1JwRVBfQnJuRVpTZFpwZG5OaFQzQmxia0ZKUTR5a1ZPaGw2a21aTDBES2t0Q0RjeXFrSFJaeV9Qc1NCVHBzV3Y4eVN0eV9IaGFOYzBWdVY5VWtIUjFnVV8wWWFMVnRzQzRRc0E=";
 
   const decoded = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
   console.log(decoded,'OPENAI_API_KEY found.');
