@@ -31,7 +31,7 @@ exports.deepSeekChat = async (req, res) => {
       messages: [{ role: "user", content: message }],
     }, {
      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       }
     });
