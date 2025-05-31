@@ -16,7 +16,6 @@ exports.createChatTable = async () => {
   `);
 };
 
-const OPENAI_API_KEY = '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';
 
 exports.deepSeekChat = async (req, res) => {
   const { message, userId } = req.body;
@@ -33,7 +32,7 @@ exports.deepSeekChat = async (req, res) => {
       messages: [{ role: "user", content: message }],
     }, {
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       }
     });
