@@ -76,11 +76,20 @@ const signUp = async (req, res) => {
  const editProfile = async (req, res) => {
   try {
     const id = req.params.id;
-    console.log(req.body)
+    console.log(req.body);
+
     const {
-      full_name, email, password, referredBy,
-      organizationName, website, numberOfElectricians, suppliesSource,
-      address, licenseNumber, referral
+      full_name,
+      email,
+      password,
+      referredBy,
+      organizationName,
+      website,
+      numberOfElectricians,
+      suppliesSource,
+      address,
+      licenseNumber,
+      referral
     } = req.body;
 
     // Check if user exists
@@ -110,6 +119,9 @@ const signUp = async (req, res) => {
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
+    // Prevent NULL in referredBy by using existing value if missing in request
+    const referredByValue = (referredBy !== undefined && referredBy !== null) ? referredBy : existingUser[0].referredBy;
+
     // Update user details
     await db.query(
       `UPDATE users SET
@@ -119,10 +131,18 @@ const signUp = async (req, res) => {
           license_number = ?, referral = ?, image = ?
        WHERE id = ?`,
       [
-        full_name, email, hashedPassword, referredBy,
-        organizationName, website, numberOfElectricians, suppliesSource,
+        full_name,
+        email,
+        hashedPassword,
+        referredByValue,
+        organizationName,
+        website,
+        numberOfElectricians,
+        suppliesSource,
         address,
-        licenseNumber, referral, image,
+        licenseNumber,
+        referral,
+        image,
         id
       ]
     );
@@ -141,6 +161,7 @@ const signUp = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 
