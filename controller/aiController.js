@@ -178,4 +178,23 @@ exports.deepSeekChat = async (req, res) => {
 };
 
 
+// Get chat messages for a session
+exports.getSessionMessages = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
+
+    const [messages] = await db.query(
+      "SELECT role, content, created_at FROM chat_history WHERE session_id = ? ORDER BY created_at ASC",
+      [sessionId]
+    );
+
+    res.json(messages);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 
