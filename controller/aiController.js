@@ -58,9 +58,15 @@ exports.getSessions = async (req, res) => {
 exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId } = req.body;
 
-  const openaiApiKey ="c2stc3ZjYWNjdC1DUHR6Z2s2enYxOVZsSHFoOVBnQ1FfWnA1MFZmMWhoXzFfdElIVy1adlF1cmlyS3BVMDZ2X3RLY1JwRVBfQnJuRVpTZFpwZG5OaFQzQmxia0ZKUTR5a1ZPaGw2a21aTDBES2t0Q0RjeXFrSFJaeV9Qc1NCVHBzV3Y4eVN0eV9IaGFOYzBWdVY5VWtIUjFnVV8wWWFMVnRzQzRRc0E=";
-  const decoded = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
-  console.log(decoded, 'OPENAI_API_KEY found.');
+  // Your base64 encoded YouTube API key
+  const encodedYouTubeApiKey = "QUl6YVN5Q3AwYjJxRTZHUHhtMlFUUV9od3E0eDhrMzBoQ1d2T3Zr";
+  const youtubeApiKey = Buffer.from(encodedYouTubeApiKey, "base64").toString("utf-8");
+  console.log("Decoded YouTube API Key:", youtubeApiKey);
+
+  // Your base64 encoded OpenAI API key
+  const openaiApiKey = "c2stc3ZjYWNjdC1DUHR6Z2s2enYxOVZsSHFoOVBnQ1FfWnA1MFZmMWhoXzFfdElIVy1adlF1cmlyS3BVMDZ2X3RLY1JwRVBfQnJuRVpTZFpwZG5OaFQzQmxia0ZKUTR5a1ZPaGw2a21aTDBES2t0Q0RjeXFrSFJaeV9Qc1NCVHBzV3Y4eVN0eV9IaGFOYzBWdVY5VWtIUjFnVV8wWWFMVnRzQzRRc0E=";
+  const decodedOpenAiKey = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
+  console.log(decodedOpenAiKey, 'OPENAI_API_KEY found.');
 
   if (!message || !userId) {
     console.log('Missing message or userId');
@@ -87,7 +93,7 @@ exports.deepSeekChat = async (req, res) => {
     );
     console.log('Saved user message to DB');
 
-    // Call OpenAI API with system prompt to respond in JSON format
+    // Call OpenAI API
     const openaiRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -104,7 +110,7 @@ exports.deepSeekChat = async (req, res) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${decoded}`,
+          Authorization: `Bearer ${decodedOpenAiKey}`,
           'Content-Type': 'application/json',
         }
       }
@@ -113,7 +119,6 @@ exports.deepSeekChat = async (req, res) => {
     const rawContent = openaiRes.data.choices[0].message.content;
     console.log("Raw AI response:", rawContent);
 
-    // Parse JSON response safely
     let explanation = "";
     let necReferences = [];
     try {
@@ -121,23 +126,20 @@ exports.deepSeekChat = async (req, res) => {
       explanation = parsed.explanation || "";
       necReferences = Array.isArray(parsed.nec_references) ? parsed.nec_references : [];
     } catch (e) {
-      explanation = rawContent;  // fallback to raw text if JSON parsing fails
+      explanation = rawContent;
       necReferences = [];
     }
 
-    // Save AI reply (explanation text)
+    // Save AI reply
     await db.query(
       `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
       [userId, 'assistant', explanation, currentSessionId]
     );
     console.log('Saved AI reply to DB');
 
-    // Fetch YouTube videos related to the query
+    // Fetch YouTube videos
     let videos = [];
     try {
-      const youtubeApiKey = process.env.YOUTUBE_API_KEY;
-      console.log("YOUTUBE_API_KEY loaded?", !!youtubeApiKey);
-
       const youtubeRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
         params: {
           key: youtubeApiKey,
@@ -163,7 +165,6 @@ exports.deepSeekChat = async (req, res) => {
 
     console.log("Videos prepared for response:", videos);
 
-    // Final response JSON with explanation, NEC references, sessionId and videos
     res.json({
       reply: explanation,
       necReferences,
@@ -176,7 +177,6 @@ exports.deepSeekChat = async (req, res) => {
     res.status(500).json({ message: 'AI or YouTube API error', error: err.response?.data || err.message });
   }
 };
-
 
 // Get chat messages for a session
 exports.getSessionMessages = async (req, res) => {
