@@ -55,33 +55,12 @@ exports.getSessions = async (req, res) => {
 };
 
 // Get chat messages for a session
-exports.getSessionMessages = async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    if (!sessionId) return res.status(400).json({ message: "sessionId required" });
-
-    const [messages] = await db.query(
-      "SELECT role, content, created_at FROM chat_history WHERE session_id = ? ORDER BY created_at ASC",
-      [sessionId]
-    );
-
-    res.json(messages);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Updated chat endpoint to accept sessionId
 exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId } = req.body;
 
-  console.log('Received deepSeekChat request:', { message, userId, sessionId });
-
   const openaiApiKey ="c2stc3ZjYWNjdC1DUHR6Z2s2enYxOVZsSHFoOVBnQ1FfWnA1MFZmMWhoXzFfdElIVy1adlF1cmlyS3BVMDZ2X3RLY1JwRVBfQnJuRVpTZFpwZG5OaFQzQmxia0ZKUTR5a1ZPaGw2a21aTDBES2t0Q0RjeXFrSFJaeV9Qc1NCVHBzV3Y4eVN0eV9IaGFOYzBWdVY5VWtIUjFnVV8wWWFMVnRzQzRRc0E=";
-
   const decoded = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
-  console.log(decoded,'OPENAI_API_KEY found.');
+  console.log(decoded, 'OPENAI_API_KEY found.');
 
   if (!message || !userId) {
     console.log('Missing message or userId');
@@ -91,7 +70,6 @@ exports.deepSeekChat = async (req, res) => {
   let currentSessionId = sessionId;
 
   try {
-    // Create session if not exists
     if (!currentSessionId) {
       const title = `Chat on ${new Date().toLocaleString()}`;
       const [result] = await db.query(
@@ -104,17 +82,25 @@ exports.deepSeekChat = async (req, res) => {
 
     // Save user message
     await db.query(
-      "INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)",
+      `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
       [userId, 'user', message, currentSessionId]
     );
     console.log('Saved user message to DB');
 
-    // Call OpenAI API
+    // Call OpenAI API with system prompt to respond in JSON format
     const openaiRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: message }],
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant that, when asked about electrical topics, provides an explanation and includes relevant NEC code references and links. " +
+              "Respond ONLY in JSON format: { \"explanation\": string, \"nec_references\": [{ \"code\": string, \"link\": string }] }"
+          },
+          { role: "user", content: message }
+        ],
       },
       {
         headers: {
@@ -124,22 +110,70 @@ exports.deepSeekChat = async (req, res) => {
       }
     );
 
-    console.log('OpenAI API response received');
+    const rawContent = openaiRes.data.choices[0].message.content;
+    console.log("Raw AI response:", rawContent);
 
-    const aiReply = openaiRes.data.choices[0].message.content;
+    // Parse JSON response safely
+    let explanation = "";
+    let necReferences = [];
+    try {
+      const parsed = JSON.parse(rawContent);
+      explanation = parsed.explanation || "";
+      necReferences = Array.isArray(parsed.nec_references) ? parsed.nec_references : [];
+    } catch (e) {
+      explanation = rawContent;  // fallback to raw text if JSON parsing fails
+      necReferences = [];
+    }
 
-    // Save AI reply
+    // Save AI reply (explanation text)
     await db.query(
-      "INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)",
-      [userId, 'assistant', aiReply, currentSessionId]
+      `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
+      [userId, 'assistant', explanation, currentSessionId]
     );
     console.log('Saved AI reply to DB');
 
-    res.json({ reply: aiReply, sessionId: currentSessionId });
+    // Fetch YouTube videos related to the query
+    let videos = [];
+    try {
+      const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+      console.log("YOUTUBE_API_KEY loaded?", !!youtubeApiKey);
+
+      const youtubeRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+        params: {
+          key: youtubeApiKey,
+          q: message,
+          part: 'snippet',
+          maxResults: 2,
+          type: 'video',
+          videoEmbeddable: 'true',
+          safeSearch: 'moderate',
+        }
+      });
+
+      videos = youtubeRes.data.items.map(item => ({
+        videoId: item.id.videoId,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnail: item.snippet.thumbnails.medium.url,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      }));
+    } catch (ytErr) {
+      console.error("YouTube API error:", ytErr.response?.data || ytErr.message);
+    }
+
+    console.log("Videos prepared for response:", videos);
+
+    // Final response JSON with explanation, NEC references, sessionId and videos
+    res.json({
+      reply: explanation,
+      necReferences,
+      sessionId: currentSessionId,
+      videos,
+    });
 
   } catch (err) {
-    console.error('Error in deepSeekChat:', err.response?.data || err.message);
-    res.status(500).json({ message: 'AI error', error: err.response?.data || err.message });
+    console.error("Error in deepSeekChat:", err.response?.data || err.message);
+    res.status(500).json({ message: 'AI or YouTube API error', error: err.response?.data || err.message });
   }
 };
 
