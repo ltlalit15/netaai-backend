@@ -9,6 +9,9 @@ router.get('/history/:userId', aiController.getHistory);
 router.post('/sessions', aiController.createSession);
 router.get('/sessions/:userId', aiController.getSessions);
 router.get('/session/:sessionId/messages', aiController.getSessionMessages);
+router.delete('/session/:sessionId', aiController.deleteSession);
+
+
 
 
 module.exports = router;
