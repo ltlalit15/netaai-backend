@@ -8,6 +8,7 @@ const path = require('path');
 const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
+const planRoutes = require('./routes/subscription');
 //const { createChatTable } = require('./controller/aiController');
 
 // ... other code ...
@@ -116,6 +117,7 @@ app.use(bodyParser.json());
 app.use('/api/user', userRoutes);
 // app.use('/api/openai', openaiRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/plan', planRoutes);
 
 // Create table on start
 // app.use('/api/project', projectRoutes);
