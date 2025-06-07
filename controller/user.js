@@ -398,7 +398,7 @@ const forgotPassword = async (req, res) => {
     // Generate JWT Token (Include tokenVersion)
     const token = jwt.sign(
       { id: user[0].id, email: user[0].email, tokenVersion: user[0].tokenVersion },
-      process.env.JWT_SECRET,
+      "a3b5c1d9e8f71234567890abcdef1234567890abcdefabcdef1234567890aber",
       { expiresIn: '1h' }
     );
 
