@@ -8,7 +8,7 @@ const path = require('path');
 const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
-const planRoutes = require('./routes/subscription');
+const planRoutes = require('./routes/subscriptionRoutes');
 //const { createChatTable } = require('./controller/aiController');
 
 // ... other code ...
