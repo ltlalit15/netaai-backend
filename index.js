@@ -9,26 +9,6 @@ const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
 const planRoutes = require('./routes/subscriptionRoutes');
-//const { createChatTable } = require('./controller/aiController');
-
-// ... other code ...
-
-// Add OpenAI route under your existing routes
-
-// const projectRoutes = require('./routes/projectRoutes');
-// const jobRoutes = require('./routes/jobRoutes');
-// const productionManagerRoutes = require('./routes/productionManagerRoutes');
-// const clientRoutes = require('./routes/clientRoutes');
-// const designerRoutes = require('./routes/designerRoutes');
-
-
-// const userRouter = require('./Routes/user');
-// const eventRouter = require('./Routes/event');
-// const restaurantRouter = require('./Routes/restaurant');
-// const agoraRouter = require('./Routes/agora');
-// const adminRouter = require('./Routes/admin');
-
-
 
 const db = require('./config');
 const app = express();
@@ -94,37 +74,15 @@ app.get('/upload/:imageName', (req, res) => {
 });
 
 
-// function getBaseUrl(req) {
-//     const baseURL = req.protocol + '://' + req.headers.host + '/';
-//     const reqUrl = new URL(req.url, baseURL);
-//     return reqUrl;
-//   }
-
-  
+ 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-// app.use('/Neaore/user', userRouter);
-// app.use('/Neaore/event', eventRouter);
-// app.use('/Neaore/restaurant', restaurantRouter);
-// app.use('/Neaore/agora', agoraRouter);
-// app.use('/admin', adminRouter);
-// Serve static files
-
-
-//createChatTable();
 
 app.use('/api/user', userRoutes);
 // app.use('/api/openai', openaiRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/plan', planRoutes);
-
-// Create table on start
-// app.use('/api/project', projectRoutes);
-// app.use('/api/job', jobRoutes);
-// app.use('/api/productionManager', productionManagerRoutes);
-// app.use('/api/client', clientRoutes);
-// app.use('/api/designer', designerRoutes);
 
 // app.use('/api/user', authRoutes);
 app.use(express.json());
