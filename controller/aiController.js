@@ -180,19 +180,49 @@ exports.getSessions = async (req, res) => {
 // };
 
 // new code   
+
+// Function to format the response
+const formatResponse = (explanation, stepByStep, necReferences, videos) => {
+  const generateNecLink = (code) => {
+    const state = "michigan";  // You can dynamically adjust this based on user state or predefined logic
+    const year = "2023"; // This can also be dynamic based on the context, but for now, let's assume 2023
+    const chapter = "3"; // Assuming wiring methods are in chapter 3
+    return `https://up.codes/viewer/${state}/nfpa-70-${year}/chapter/${chapter}/wiring-methods-and-materials#${code}`;
+  };
+
+  return {
+    response: explanation,
+    step_by_step: stepByStep.map(step => step.trim()).filter(step => step.length > 0),
+    nec_references: necReferences.map(ref => ({
+      code: ref.code,
+      link: generateNecLink(ref.code),  // Dynamically generate the link
+      description: ref.description || "No description available"  // Ensure description is included
+    })),
+    videos: videos.map(video => ({
+      videoId: video.id,
+      title: video.title,
+      description: video.description,
+      thumbnail: video.thumbnail,
+      url: video.url
+    })),
+    model_used: "gpt-3.5-turbo"
+  };
+};
+
+// DeepSeekChat function
 exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId } = req.body;
 
-  // Your base64 encoded YouTube API key
+  // Decode API Keys from base64 (you can improve this by using environment variables)
   const encodedYouTubeApiKey = "QUl6YVN5Q3AwYjJxRTZHUHhtMlFUUV9od3E0eDhrMzBoQ1d2T3Zr";
   const youtubeApiKey = Buffer.from(encodedYouTubeApiKey, "base64").toString("utf-8");
-  console.log("Decoded YouTube API Key:", youtubeApiKey);
-
-  // Your base64 encoded OpenAI API key
   const openaiApiKey = "c2stc3ZjYWNjdC1DUHR6Z2s2enYxOVZsSHFoOVBnQ1FfWnA1MFZmMWhoXzFfdElIVy1adlF1cmlyS3BVMDZ2X3RLY1JwRVBfQnJuRVpTZFpwZG5OaFQzQmxia0ZKUTR5a1ZPaGw2a21aTDBES2t0Q0RjeXFrSFJaeV9Qc1NCVHBzV3Y4eVN0eV9IaGFOYzBWdVY5VWtIUjFnVV8wWWFMVnRzQzRRc0E=";
   const decodedOpenAiKey = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
-  console.log(decodedOpenAiKey, 'OPENAI_API_KEY found.');
 
+  console.log("Decoded YouTube API Key:", youtubeApiKey);
+  console.log("Decoded OpenAI API Key:", decodedOpenAiKey);
+
+  // Check for valid input
   if (!message || !userId) {
     console.log('Missing message or userId');
     return res.status(400).json({ message: 'Missing message or userId' });
@@ -201,6 +231,7 @@ exports.deepSeekChat = async (req, res) => {
   let currentSessionId = sessionId;
 
   try {
+    // If session ID is not provided, create a new session
     if (!currentSessionId) {
       const title = `Chat on ${new Date().toLocaleString()}`;
       const [result] = await db.query(
@@ -211,14 +242,14 @@ exports.deepSeekChat = async (req, res) => {
       console.log('Created new chat session with ID:', currentSessionId);
     }
 
-    // Save user message
+    // Save user message to chat_history
     await db.query(
       `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
       [userId, 'user', message, currentSessionId]
     );
     console.log('Saved user message to DB');
 
-    // Call OpenAI API
+    // Call OpenAI API for response
     const openaiRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -261,14 +292,14 @@ exports.deepSeekChat = async (req, res) => {
       return `• ${step.trim()}`;  // Add bullet points
     }).filter(Boolean);
 
-    // Save AI reply
+    // Save AI reply to DB
     await db.query(
       `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
       [userId, 'assistant', explanation, currentSessionId]
     );
     console.log('Saved AI reply to DB');
 
-    // Fetch YouTube videos
+    // Fetch YouTube videos related to the query
     let videos = [];
     try {
       const youtubeRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
@@ -276,7 +307,7 @@ exports.deepSeekChat = async (req, res) => {
           key: youtubeApiKey,
           q: message,
           part: 'snippet',
-          maxResults: 2,
+          maxResults: 3,
           type: 'video',
           videoEmbeddable: 'true',
           safeSearch: 'moderate',
@@ -296,14 +327,8 @@ exports.deepSeekChat = async (req, res) => {
 
     console.log("Videos prepared for response:", videos);
 
-    // Return the structured response as JSON
-    res.json({
-      reply: explanation,
-      stepByStep: stepByStepFormatted, // Return the step-by-step breakdown
-      necReferences,
-      sessionId: currentSessionId,
-      videos,
-    });
+    // Return the structured response as JSON using the formatResponse function
+    res.json(formatResponse(explanation, stepByStepFormatted, necReferences, videos));
 
   } catch (err) {
     console.error("Error in deepSeekChat:", err.response?.data || err.message);
@@ -394,6 +419,32 @@ exports.deleteSession = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+// feedback code
+exports.submitFeedback = async (req, res) => {
+  const { responseId, feedback, reason } = req.body;
+
+  // Basic validation
+  if (!responseId || !feedback) {
+    return res.status(400).json({ message: 'Missing responseId or feedback' });
+  }
+
+  try {
+    // Insert feedback into the database
+    await db.query(
+      "INSERT INTO chat_feedback (response_id, feedback, reason) VALUES (?, ?, ?)",
+      [responseId, feedback, reason || null]  // Use null if reason is not provided
+    );
+
+    // Send a response to the client
+    res.json({ message: 'Feedback received successfully' });
+  } catch (error) {
+    console.error('Error saving feedback:', error);
+    res.status(500).json({ message: 'Error saving feedback' });
   }
 };
 
