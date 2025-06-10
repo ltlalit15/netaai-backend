@@ -256,11 +256,11 @@ exports.deepSeekChat = async (req, res) => {
       {
         model: "gpt-3.5-turbo",
         messages: [
-          {
-            role: "system",
-            content:
-              content: "You are a helpful assistant that, when asked about electrical topics, provides an explanation, step-by-step breakdown, and relevant NEC code references, each with its explanation, in JSON format. Respond strictly in this format: { \"explanation\": string, \"step_by_step\": string, \"nec_references\": [{ \"code\": string, \"link\": string, \"description\": string }] }"
-          },
+         {
+  role: "system",
+  content: "You are a helpful assistant that, when asked about electrical topics, provides an explanation, step-by-step breakdown, and relevant NEC code references, each with its explanation, in JSON format. Respond strictly in this format: { \"explanation\": string, \"step_by_step\": string, \"nec_references\": [{ \"code\": string, \"link\": string, \"description\": string }] }"
+}
+
           { role: "user", content: message }
         ],
       },
