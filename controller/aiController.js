@@ -191,13 +191,11 @@ const formatResponse = (explanation, stepByStep, necReferences, videos) => {
   return {
     response: explanation,
     step_by_step: stepByStep.map(step => step.trim()).filter(step => step.length > 0),
-    necReferences = necReferences
-  .filter(ref => ref.description)  // Only keep references that have a description
-  .map(ref => ({
-    code: ref.code,
-    description: ref.description || "No description available",
-    link: generateNecLink(ref.code)
-  }));
+   nec_references: necReferences.map(ref => ({
+      code: ref.code,
+      link: generateNecLink(ref.code),  // Dynamically generate the link
+      description: ref.description || "No description available"  // Ensure description is included
+    })),
 
     videos: videos.map(video => ({
       videoId: video.id,
