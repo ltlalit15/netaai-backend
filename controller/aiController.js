@@ -435,20 +435,19 @@ exports.deleteSession = async (req, res) => {
 
 
 
-// feedback code
 exports.submitFeedback = async (req, res) => {
-  const { responseId, feedback, reason } = req.body;
+  const { responseId, feedback, reason, user_id, question } = req.body;
 
   // Basic validation
-  if (!responseId || !feedback) {
-    return res.status(400).json({ message: 'Missing responseId or feedback' });
+  if (!responseId || !feedback || !user_id || !question) {
+    return res.status(400).json({ message: 'Missing responseId, feedback, user_id, or question' });
   }
 
   try {
-    // Insert feedback into the database
+    // Insert feedback into the database, now including user_id and question
     await db.query(
-      "INSERT INTO chat_feedback (response_id, feedback, reason) VALUES (?, ?, ?)",
-      [responseId, feedback, reason || null]  // Use null if reason is not provided
+      "INSERT INTO chat_feedback (response_id, feedback, reason, user_id, question) VALUES (?, ?, ?, ?, ?)",
+      [responseId, feedback, reason || null, user_id, question]  // Use null for reason if not provided
     );
 
     // Send a response to the client
@@ -456,6 +455,30 @@ exports.submitFeedback = async (req, res) => {
   } catch (error) {
     console.error('Error saving feedback:', error);
     res.status(500).json({ message: 'Error saving feedback' });
+  }
+};
+
+exports.getAllFeedback = async (req, res) => {
+  try {
+    // Fetch all feedback from the database
+    // const [feedbacks] = await db.query("SELECT * FROM chat_feedback");
+    const [feedbacks] = await db.query(`
+      SELECT 
+        f.*, 
+        u.email
+      FROM chat_feedback f
+      JOIN users u ON f.user_Id = u.id
+    `);
+    // Check if no feedback is found
+    if (feedbacks.length === 0) {
+      return res.status(404).json({ message: 'No feedback found' });
+    }
+
+    // Send the feedback data in the response
+    res.json({ feedbacks });
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    res.status(500).json({ message: 'Error fetching feedback' });
   }
 };
 
