@@ -12,6 +12,9 @@ router.get('/session/:sessionId/messages', aiController.getSessionMessages);
 router.delete('/session/:sessionId', aiController.deleteSession);
 
 
+// Route to submit feedback
+router.post('/submit-feedback', aiController.submitFeedback)
+
 
 
 module.exports = router;
