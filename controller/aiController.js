@@ -231,14 +231,15 @@ exports.deepSeekChat = async (req, res) => {
 
   try {
     // If session ID is not provided, create a new session
-    if (!currentSessionId) {
-      const title = `Chat on ${new Date().toLocaleString()}`;
+   if (!currentSessionId) {
+      const title = message.substring(0, 30); // Using first 30 characters as session title
       const [result] = await db.query(
         "INSERT INTO chat_sessions (user_id, title) VALUES (?, ?)",
         [userId, title]
       );
       currentSessionId = result.insertId;
-      console.log('Created new chat session with ID:', currentSessionId);
+     console.log('Created new chat session with ID:', currentSessionId);
+     
     }
 
     // Save user message to chat_history
