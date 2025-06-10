@@ -21,17 +21,21 @@
 const mysql = require('mysql2/promise');
 
 const db = mysql.createPool({
-  host: 'crossover.proxy.rlwy.net',  // Updated host from new CLI
-  port: 22208,                       // Updated port from new CLI
-  user: 'root',                      // Same as CLI
-  password: 'YjbLZhUBzwNdtzHeMooDGksWzTXxAFuO',  // Updated password from new CLI
-  database: 'railway',               // Same as CLI
+  host: 'metro.proxy.rlwy.net',          // Host from CLI
+  port: 52312,                            // Port from CLI
+  user: 'root',                           // User from CLI
+  password: 'GGopjCKQkiIFTieXePzJPqMEAnnTbjVA',  // Password from CLI
+  database: 'railway',                    // Database name from CLI
   multipleStatements: true,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 console.warn('Connected to Railway MySQL');
 
 module.exports = db;
+
 
 
 
