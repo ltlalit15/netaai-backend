@@ -286,7 +286,7 @@ exports.deepSeekChat = async (req, res) => {
        // Map each NEC reference to include the dynamically generated link
       necReferences = necReferences.map(ref => ({
         code: ref.code,
-        description: ref.description || "No description available",
+        description: ref.description,
         link: `https://up.codes/viewer/michigan/nfpa-70-2023/chapter/3/wiring-methods-and-materials#${ref.code}`
       }));
       
