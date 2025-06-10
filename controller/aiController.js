@@ -259,8 +259,7 @@ exports.deepSeekChat = async (req, res) => {
           {
             role: "system",
             content:
-              "You are a helpful assistant that, when asked about electrical topics, provides an explanation and includes relevant NEC code references and links. " +
-              "Respond ONLY in JSON format: { \"explanation\": string, \"nec_references\": [{ \"code\": string, \"link\": string }] }"
+              content: "You are a helpful assistant that, when asked about electrical topics, provides an explanation, step-by-step breakdown, and relevant NEC code references, each with its explanation, in JSON format. Respond strictly in this format: { \"explanation\": string, \"step_by_step\": string, \"nec_references\": [{ \"code\": string, \"link\": string, \"description\": string }] }"
           },
           { role: "user", content: message }
         ],
