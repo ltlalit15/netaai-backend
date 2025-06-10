@@ -258,31 +258,6 @@ const deleteUserById = async (req, res) => {
 
 
 
-// const forgotPassword = async (req, res) => {
-//     try {
-//         const { email, newPassword } = req.body;
-
-//         // Check if user exists
-//         const [user] = await db.query("SELECT * FROM user WHERE email = ?", [email]);
-//         if (user.length === 0) {
-//             return res.status(404).json({ status: "false", message: "User not found with this email." });
-//         }
-
-//         // Hash new password
-//         const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-//         // Update password and confirmPassword
-//         await db.query("UPDATE user SET password = ?, confirmPassword = ? WHERE email = ?", 
-//             [hashedPassword, hashedPassword, email]);
-
-//         res.status(200).json({ status: "true", message: "Password updated successfully." });
-
-//     } catch (error) {
-//         console.error("Forgot Password Error:", error);
-//         res.status(500).json({ status: "false", message: "Server error" });
-//     }
-// };
-
 
 
 const forgotPassword = async (req, res) => {
@@ -292,17 +267,17 @@ const forgotPassword = async (req, res) => {
         // 1️⃣ Check karo ki user exist karta hai ya nahi
         const [user] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
         if (user.length === 0) {
-            return res.status(404).json({ status: "false", message: "User nahi mila." });
+            return res.status(404).json({ status: "false", message: "User Not found." });
         }
 
         // 2️⃣ Google Sign-In users ka password reset allow nahi hoga
-        if (user[0].googleSignIn === "true") {
-            return res.status(400).json({
-                status: "false",
-                message: "Password reset is not allowed for Google Sign-In users. Please log in using Google."
+        // if (user[0].googleSignIn === "true") {
+        //     return res.status(400).json({
+        //         status: "false",
+        //         message: "Password reset is not allowed for Google Sign-In users. Please log in using Google."
 
-            });
-        }
+        //     });
+        // }
 
         // 3️⃣ Ek Unique Reset Token Generate karo
         const resetToken = crypto.randomBytes(32).toString("hex");
@@ -321,15 +296,16 @@ const forgotPassword = async (req, res) => {
             },
         });
 
-        await transporter.sendMail({
-            from: 'ankitverma3490@gmail.com',
-            to: email,
-            subject: "Your Password Reset Token",
-            html: `<p>Your password reset token: <strong>${resetToken}</strong></p>
-                    <p>This token is valid for <strong>15 minutes</strong>.</p>
-                    <p>If you did not request this, please ignore this email.</p>`,
+       const resetLink = `http://localhost:5173/reset-password/${resetToken}`; // Example link, modify for your app
 
-        });
+await transporter.sendMail({
+    from: 'ankitverma3490@gmail.com',
+    to: email,
+    subject: "Your Password Reset Link",
+    html: `<p>Click on the link to reset your password: <a href="${resetLink}">${resetLink}</a></p>
+            <p>This link will expire in <strong>15 minutes</strong>.</p>
+            <p>If you did not request this, please ignore this email.</p>`,
+});
 
         res.status(200).json({ status: "true", message: "Password reset send email successfully." });
 
@@ -337,6 +313,40 @@ const forgotPassword = async (req, res) => {
         console.error("Forgot Password Error:", error);
         res.status(500).json({ status: "false", message: "Server error" });
     }
+};
+const resetPasswordFromToken = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    // 1. Check if the reset token exists in the database
+    const [user] = await db.query('SELECT id, resetToken, resetTokenExpiry FROM users WHERE resetToken = ?', [resetToken]);
+
+    if (user.length === 0) {
+      return res.status(400).json({ status: "false", message: 'Invalid or expired reset token' });
+    }
+
+    // 2. Check if the reset token has expired
+    const currentTime = new Date();
+    if (new Date(user[0].resetTokenExpiry) < currentTime) {
+      return res.status(400).json({ status: "false", message: 'Reset token has expired' });
+    }
+
+    // 3. Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // 4. Update the user's password and clear the reset token and expiry from the database
+    await db.query('UPDATE users SET password = ?, resetToken = NULL, resetTokenExpiry = NULL WHERE resetToken = ?', [hashedNewPassword, resetToken]);
+
+    // Send a success response
+    res.json({
+      status: "true",
+      message: 'Password reset successfully'
+    });
+
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 
@@ -373,6 +383,7 @@ const forgotPassword = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 
 
 
