@@ -194,7 +194,7 @@ const formatResponse = (explanation, stepByStep, necReferences, videos) => {
     nec_references: necReferences.map(ref => ({
       code: ref.code,
       link: generateNecLink(ref.code),  // Dynamically generate the link
-      description: ref.description || "No description available"  // Ensure description is included
+      description: ref.description
     })),
     videos: videos.map(video => ({
       videoId: video.id,
