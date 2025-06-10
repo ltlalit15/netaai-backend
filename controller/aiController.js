@@ -5,8 +5,6 @@ const db = require('../config');
 require('dotenv').config();
 
 
-
-
 exports.getHistory = async (req, res) => {
   try {
     const { userId } = req.params;
