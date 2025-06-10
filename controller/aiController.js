@@ -276,13 +276,24 @@ exports.deepSeekChat = async (req, res) => {
     console.log("Raw AI response:", rawContent);
 
     let explanation = "";
+    let stepByStep = "";
     let necReferences = [];
+     let confidence = 1.0;
     try {
       const parsed = JSON.parse(rawContent);
-      explanation = parsed.explanation || "";
+      explanation = parsed.explanation || rawContent;
+      stepByStep = parsed.step_by_step || "";
       necReferences = Array.isArray(parsed.nec_references) ? parsed.nec_references : [];
+       // Map each NEC reference to include the dynamically generated link
+      necReferences = necReferences.map(ref => ({
+        code: ref.code,
+        description: ref.description || "No description available",
+        link: `https://up.codes/viewer/michigan/nfpa-70-2023/chapter/3/wiring-methods-and-materials#${ref.code}`
+      }));
+      
     } catch (e) {
       explanation = rawContent;
+      stepByStep = "";
       necReferences = [];
     }
 
