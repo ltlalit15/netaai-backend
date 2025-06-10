@@ -188,19 +188,16 @@ const formatResponse = (explanation, stepByStep, necReferences, videos) => {
     return `https://up.codes/viewer/${state}/nfpa-70-${year}/chapter/${chapter}/wiring-methods-and-materials#${code}`;
   };
 
-return {
-  response: explanation,
-  step_by_step: stepByStep.map(step => step.trim()).filter(step => step.length > 0),
-  necReferences: necReferences
-    .filter(ref => ref.description)  // Only keep references that have a description
-    .map(ref => ({
-      code: ref.code,
-      description: ref.description || "No description available",
-      link: generateNecLink(ref.code)
-    })) // Corrected the semicolon issue here
-};
-
-
+  return {
+    response: explanation,
+    step_by_step: stepByStep.map(step => step.trim()).filter(step => step.length > 0),
+    necReferences: necReferences
+      .filter(ref => ref.description)  // Only keep references that have a description
+      .map(ref => ({
+        code: ref.code,
+        description: ref.description || "No description available", // Fallback description if missing
+        link: generateNecLink(ref.code)
+      })),
     videos: videos.map(video => ({
       videoId: video.id,
       title: video.title,
