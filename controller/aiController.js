@@ -284,6 +284,7 @@ exports.deepSeekChat = async (req, res) => {
       explanation = parsed.explanation || rawContent;
       stepByStep = parsed.step_by_step || "";
       necReferences = Array.isArray(parsed.nec_references) ? parsed.nec_references : [];
+      console.log("Parsed NEC References:", necReferences);
        // Map each NEC reference to include the dynamically generated link
       necReferences = necReferences.map(ref => ({
         code: ref.code,
