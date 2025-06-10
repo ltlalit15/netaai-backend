@@ -182,20 +182,20 @@ exports.getSessions = async (req, res) => {
 // Function to format the response
 const formatResponse = (explanation, stepByStep, necReferences, videos) => {
   const generateNecLink = (code) => {
-    const state = "michigan";  // You can dynamically adjust this based on user state or predefined logic
-    const year = "2023"; // This can also be dynamic based on the context, but for now, let's assume 2023
-    const chapter = "3"; // Assuming wiring methods are in chapter 3
+    const state = "michigan";  // This can be dynamic
+    const year = "2023";
+    const chapter = "3";
     return `https://up.codes/viewer/${state}/nfpa-70-${year}/chapter/${chapter}/wiring-methods-and-materials#${code}`;
   };
 
   return {
     response: explanation,
     step_by_step: stepByStep.map(step => step.trim()).filter(step => step.length > 0),
-    necReferences = necReferences.map(ref => ({
-  code: ref.code,
-  description: ref.description || "No description available",
-  link: https://up.codes/viewer/michigan/nfpa-70-2023/chapter/3/wiring-methods-and-materials#${ref.code}
-}));
+    necReferences: necReferences.map(ref => ({
+      code: ref.code,
+      description: ref.description || "No description available",
+      link: generateNecLink(ref.code)
+    })),
     videos: videos.map(video => ({
       videoId: video.id,
       title: video.title,
@@ -206,6 +206,7 @@ const formatResponse = (explanation, stepByStep, necReferences, videos) => {
     model_used: "gpt-3.5-turbo"
   };
 };
+
 
 
 // DeepSeekChat function
