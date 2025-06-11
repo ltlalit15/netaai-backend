@@ -182,19 +182,32 @@ exports.getSessions = async (req, res) => {
 // Function to format the response
 const formatResponse = (explanation, stepByStep, necReferences, videos) => {
   const generateNecLink = (code) => {
-    const state = "michigan";  // This can be dynamic
-    const year = "2023";
-    const chapter = "3";
+    const state = "michigan";  // You can dynamically adjust this based on user state or predefined logic
+    const year = "2023"; // This can also be dynamic based on the context, but for now, let's assume 2023
+    const chapter = "3"; // Assuming wiring methods are in chapter 3
     return `https://up.codes/viewer/${state}/nfpa-70-${year}/chapter/${chapter}/wiring-methods-and-materials#${code}`;
   };
 
+  // Ensure step_by_step and nec_references are never empty and follow the same format
+  if (!stepByStep || stepByStep.length === 0) {
+    stepByStep = ["Step-by-step breakdown is not available."];
+  }
+
+  if (!necReferences || necReferences.length === 0) {
+    necReferences = [{
+      code: "N/A",
+      link: "#",
+      description: "No NEC references available"
+    }];
+  }
+
   return {
-    response: explanation,
+    response: explanation || "No explanation available",
     step_by_step: stepByStep.map(step => step.trim()).filter(step => step.length > 0),
-    necReferences: necReferences.map(ref => ({
-      code: ref.code,
-      description: ref.description || "No description available",
-      link: generateNecLink(ref.code)
+    nec_references: necReferences.map(ref => ({
+      code: ref.code || "N/A",  // Default if missing
+      link: generateNecLink(ref.code || "N/A"),  // Default link if no code
+      description: ref.description || "No description available"  // Ensure description is included
     })),
     videos: videos.map(video => ({
       videoId: video.id,
@@ -208,13 +221,12 @@ const formatResponse = (explanation, stepByStep, necReferences, videos) => {
 };
 
 
-
 // DeepSeekChat function
 exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId } = req.body;
 
   // Decode API Keys from base64 (you can improve this by using environment variables)
-  const encodedYouTubeApiKey = "QUl6YVN5Q3AwYjJxRTZHUHhtMlFUUV9od3E0eDhrMzBoQ1d2T3Zr";
+  const encodedYouTubeApiKey = "QUl6YVN5QndIYzBDVXU5dGY2NFJrV3lpVWRtaGZxYnp1NWVlS1k4";
   const youtubeApiKey = Buffer.from(encodedYouTubeApiKey, "base64").toString("utf-8");
   const openaiApiKey = "c2stc3ZjYWNjdC1DUHR6Z2s2enYxOVZsSHFoOVBnQ1FfWnA1MFZmMWhoXzFfdElIVy1adlF1cmlyS3BVMDZ2X3RLY1JwRVBfQnJuRVpTZFpwZG5OaFQzQmxia0ZKUTR5a1ZPaGw2a21aTDBES2t0Q0RjeXFrSFJaeV9Qc1NCVHBzV3Y4eVN0eV9IaGFOYzBWdVY5VWtIUjFnVV8wWWFMVnRzQzRRc0E=";
   const decodedOpenAiKey = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
@@ -254,7 +266,8 @@ exports.deepSeekChat = async (req, res) => {
     const openaiRes = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: "gpt-3.5-turbo",
+       // model: "gpt-3.5-turbo",
+        model: "gpt-4",
         messages: [
          {
   role: "system",
