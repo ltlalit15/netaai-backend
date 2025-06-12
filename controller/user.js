@@ -50,7 +50,7 @@ const signUp = async (req, res) => {
         const [newUser] = await db.query('SELECT id, full_name, email, referredBy, phone_number FROM users WHERE id = ?', [result.insertId]);
 
         // Generate JWT Token
-        const token = jwt.sign({ id: newUser[0].id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: newUser[0].id }, "a3b5c1d9e8f71234567890abcdef1234567890abcdefabcdef1234567890aber", { expiresIn: '1h' });
 
         // Send response
         res.status(201).json({
