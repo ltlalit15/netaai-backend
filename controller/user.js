@@ -299,7 +299,7 @@ const forgotPassword = async (req, res) => {
        const resetLink = `http://localhost:5173/reset-password/${resetToken}`; // Example link, modify for your app
 
 await transporter.sendMail({
-    from: 'ankitverma3490@gmail.com',
+    from: 'support@ask-neta.com',
     to: email,
     subject: "Your Password Reset Link",
     html: `<p>Click on the link to reset your password: <a href="${resetLink}">${resetLink}</a></p>
