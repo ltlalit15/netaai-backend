@@ -228,7 +228,7 @@ exports.deepSeekChat = async (req, res) => {
   // Decode API Keys from base64 (you can improve this by using environment variables)
   const encodedYouTubeApiKey = "QUl6YVN5QndIYzBDVXU5dGY2NFJrV3lpVWRtaGZxYnp1NWVlS1k4";
   const youtubeApiKey = Buffer.from(encodedYouTubeApiKey, "base64").toString("utf-8");
-  const openaiApiKey = "c2stc3ZjYWNjdC1DUHR6Z2s2enYxOVZsSHFoOVBnQ1FfWnA1MFZmMWhoXzFfdElIVy1adlF1cmlyS3BVMDZ2X3RLY1JwRVBfQnJuRVpTZFpwZG5OaFQzQmxia0ZKUTR5a1ZPaGw2a21aTDBES2t0Q0RjeXFrSFJaeV9Qc1NCVHBzV3Y4eVN0eV9IaGFOYzBWdVY5VWtIUjFnVV8wWWFMVnRzQzRRc0E=";
+  const openaiApiKey = "c2stcHJvai1EdVE3Q08yRTdvdVhYN0dSa2Y0eWxrNmpLczVqYlRDLXJycGZSX1JldllaM05LR1V4ZkVFOGQtWkNqeUtMaVAwQTRQam56eThvWVQzQmxia0ZKMVdDbkcwLXh0RkVqU1BVenV0azNDT2lwLXl6cEVUWmE3cVpMQkFXYXpVaWpDX2ZWaDNwUkFkVzFZMWtuWWRBUkNSQ3ByOHpJNEE=";
   const decodedOpenAiKey = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
 
   console.log("Decoded YouTube API Key:", youtubeApiKey);
