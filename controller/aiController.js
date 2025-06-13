@@ -231,7 +231,7 @@ exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId, imageUrl } = req.body;
 
   // Decode API Keys from base64 (you can improve this by using environment variables)
-  const encodedYouTubeApiKey = "QUl6YVN5QndIYzBDVXU5dGY2NFJrV3lpVWRtaGZxYnp1NWVlS1k4";
+  const encodedYouTubeApiKey = "QUl6YVN5Q3AwYjJxRTZHUHhtMlFUUV9od3E0eDhrMzBoQ1d2T3Zr";
   const youtubeApiKey = Buffer.from(encodedYouTubeApiKey, "base64").toString("utf-8");
   const openaiApiKey = "c2stcHJvai1EdVE3Q08yRTdvdVhYN0dSa2Y0eWxrNmpLczVqYlRDLXJycGZSX1JldllaM05LR1V4ZkVFOGQtWkNqeUtMaVAwQTRQam56eThvWVQzQmxia0ZKMVdDbkcwLXh0RkVqU1BVenV0azNDT2lwLXl6cEVUWmE3cVpMQkFXYXpVaWpDX2ZWaDNwUkFkVzFZMWtuWWRBUkNSQ3ByOHpJNEE=";
   const decodedOpenAiKey = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
