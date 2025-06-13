@@ -66,10 +66,6 @@ const signUp = async (req, res) => {
 };
 
 
-
-
-
-
  const editProfile = async (req, res) => {
   try {
     const id = req.params.id;
@@ -77,7 +73,7 @@ const signUp = async (req, res) => {
     const {
       full_name, email, password, referredBy,
       organizationName, website, numberOfElectricians, suppliesSource,
-      address, licenseNumber, referral
+      address, licenseNumber, referral,login_count
     } = req.body;
 
     // Check if user exists
@@ -113,13 +109,14 @@ const signUp = async (req, res) => {
           full_name = ?, email = ?, password = ?, referredBy = ?,
           organization_name = ?, website = ?, number_of_electricians = ?, supplies_source = ?,
           address = ?,
-          license_number = ?, referral = ?, image = ?
+          license_number = ?, referral = ?, image = ?, login_count = ?
        WHERE id = ?`,
       [
         full_name, email, hashedPassword, referredBy,
         organizationName, website, numberOfElectricians, suppliesSource,
         address,
         licenseNumber, referral, image,
+        login_count,
         id
       ]
     );
@@ -392,9 +389,11 @@ const resetPasswordFromToken = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists and get tokenVersion
-    const [user] = await db.query('SELECT id, email, password, full_name, tokenVersion FROM users WHERE email = ?', [email]);
-    console.log(user);
+    // Fetch user data along with login_count
+    const [user] = await db.query(
+      'SELECT id, email, password, full_name, tokenVersion, login_count FROM users WHERE email = ?', 
+      [email]
+    );
 
     if (user.length === 0) {
       return res.status(400).json({ status: "false", message: 'Invalid email or password', data: [] });
@@ -405,6 +404,10 @@ const resetPasswordFromToken = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ status: "false", message: 'Invalid email or password', data: [] });
     }
+
+    // Increment login count
+    const newLoginCount = (user[0].login_count || 0) + 1;
+    await db.query('UPDATE users SET login_count = ? WHERE id = ?', [newLoginCount, user[0].id]);
 
     // Generate JWT Token (Include tokenVersion)
     const token = jwt.sign(
@@ -418,7 +421,8 @@ const resetPasswordFromToken = async (req, res) => {
       id: user[0].id.toString(),
       email: user[0].email,
       name: user[0].full_name,
-      token: token
+      token: token,
+      login_count: newLoginCount
     };
 
     res.json({ status: "true", message: 'Login successful', data: userData });
