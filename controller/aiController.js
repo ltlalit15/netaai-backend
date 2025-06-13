@@ -227,18 +227,13 @@ exports.getSessions = async (req, res) => {
 }
 
 
-// DeepSeekChat function (Fully Updated)
 exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId, imageUrl } = req.body;
 
-  // Decode API Keys from base64 (should ideally be in env variables)
-  const encodedYouTubeApiKey = "QUl6YVN5QndIYzBDVXU5dGY2NFJrV3lpVWRtaGZxYnp1NWVlS1k4";
-  const youtubeApiKey = Buffer.from(encodedYouTubeApiKey, "base64").toString("utf-8");
+  // API Keys from env variables
+  const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+  const decodedOpenAiKey = process.env.OPENAI_API_KEY;
 
-  const openaiApiKey = "c2stcHJvai1EdVE3Q08yRTdvdVhYN0dSa2Y0eWxrNmpLczVqYlRDLXJycGZSX1JldllaM05LR1V4ZkVFOGQtWkNqeUtMaVAwQTRQam56eThvWVQzQmxia0ZKMVdDbkcwLXh0RkVqU1BVenV0azNDT2lwLXl6cEVUWmE3cVpMQkFXYXpVaWpDX2ZWaDNwUkFkVzFZMWtuWWRBUkNSQ3ByOHpJNEE=";
-  const decodedOpenAiKey = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
-
-  // Check for valid input
   if (!message || !userId) {
     return res.status(400).json({ message: 'Missing message or userId' });
   }
@@ -246,7 +241,7 @@ exports.deepSeekChat = async (req, res) => {
   let currentSessionId = sessionId;
 
   try {
-    // If session ID is not provided, create a new session
+    // If no sessionId, create new session
     if (!currentSessionId) {
       const title = message.substring(0, 30);
       const [result] = await db.query(
@@ -262,7 +257,7 @@ exports.deepSeekChat = async (req, res) => {
       [userId, 'user', message, currentSessionId]
     );
 
-    // Prepare messages for OpenAI
+    // Prepare OpenAI messages
     const messages = [
       {
         role: "system",
@@ -309,43 +304,61 @@ Respond only in this exact structure:
     }
 
     // Call OpenAI API
-    const openaiRes = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: "gpt-4o",  // Highly recommended to use gpt-4o for image + text
-        messages: messages
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${decodedOpenAiKey}`,
-          'Content-Type': 'application/json',
-        }
+    const openaiRes = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: "gpt-4o",
+      messages: messages,
+      max_tokens: 1024
+    }, {
+      headers: {
+        Authorization: `Bearer ${decodedOpenAiKey}`,
+        'Content-Type': 'application/json',
       }
-    );
+    });
 
     const rawContent = openaiRes.data.choices[0].message.content;
+    console.log("Raw AI response:", rawContent);
 
-    let explanation = "", stepByStep = [], necReferences = [];
+    let explanation = "";
+    let stepByStep = "";
+    let necReferences = [];
 
     try {
-      const parsed = JSON.parse(rawContent);
-      explanation = parsed.explanation || "";
-      stepByStep = parsed.step_by_step || [];
-      necReferences = Array.isArray(parsed.nec_references) ? parsed.nec_references : [];
+      let parsed = rawContent;
 
-      // Generate NEC reference links dynamically
+      // ✅ Extract JSON block first
+      const extracted = extractJsonBlock(parsed);
+      if (extracted) {
+        parsed = extracted;
+      } else if (typeof parsed === "string") {
+        parsed = JSON.parse(parsed);
+      }
+
+      explanation = parsed.explanation || parsed.response || rawContent;
+      stepByStep = parsed.step_by_step || [];
+      necReferences = parsed.nec_references || [];
+
+      // ✅ Normalize step_by_step
+      if (typeof stepByStep === "string") {
+        stepByStep = stepByStep.split("\n").map(s => s.trim()).filter(Boolean);
+      } else if (!Array.isArray(stepByStep)) {
+        stepByStep = [];
+      }
+
+      // ✅ Normalize nec_references
       necReferences = necReferences.map(ref => ({
         code: ref.code,
-        description: ref.description,
+        description: ref.description || "No description available",
         link: `https://up.codes/viewer/michigan/nfpa-70-2023/chapter/3/wiring-methods-and-materials#${ref.code}`
       }));
 
-    } catch (err) {
-      console.error("Parsing error:", err);
-      return res.status(500).json({ message: "AI response format error", error: err.message });
+    } catch (e) {
+      console.error("Parsing failed:", e.message);
+      explanation = rawContent;
+      stepByStep = [];
+      necReferences = [];
     }
 
-    // Save AI reply to DB
+    // Save AI response to DB
     await db.query(
       `INSERT INTO chat_history (user_id, role, content, session_id) VALUES (?, ?, ?, ?)`,
       [userId, 'assistant', explanation, currentSessionId]
@@ -357,7 +370,7 @@ Respond only in this exact structure:
       const youtubeRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
         params: {
           key: youtubeApiKey,
-          q: message,
+          q: message || "electrical wiring",
           part: 'snippet',
           maxResults: 3,
           type: 'video',
@@ -367,7 +380,7 @@ Respond only in this exact structure:
       });
 
       videos = youtubeRes.data.items.map(item => ({
-        videoId: item.id.videoId,
+        id: item.id.videoId,
         title: item.snippet.title,
         description: item.snippet.description,
         thumbnail: item.snippet.thumbnails.medium.url,
@@ -377,19 +390,12 @@ Respond only in this exact structure:
       console.error("YouTube API error:", ytErr.response?.data || ytErr.message);
     }
 
-    // Prepare final response
-    const response = {
-      explanation: explanation,
-      step_by_step: stepByStep,
-      nec_references: necReferences,
-      videos: videos
-    };
+   res.json(formatResponse(explanation, stepByStep, necReferences, videos));
 
-    res.json(response);
 
   } catch (err) {
     console.error("Error in deepSeekChat:", err.response?.data || err.message);
-    res.status(500).json({ message: 'AI or YouTube API error', error: err.response?.data || err.message });
+    res.status(500).json({ message: 'AI error' });
   }
 };
 
