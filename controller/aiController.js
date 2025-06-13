@@ -230,9 +230,14 @@ exports.getSessions = async (req, res) => {
 exports.deepSeekChat = async (req, res) => {
   const { message, userId, sessionId, imageUrl } = req.body;
 
-  // API Keys from env variables
-  const youtubeApiKey = process.env.YOUTUBE_API_KEY;
-  const decodedOpenAiKey = process.env.OPENAI_API_KEY;
+  // Decode API Keys from base64 (you can improve this by using environment variables)
+  const encodedYouTubeApiKey = "QUl6YVN5QndIYzBDVXU5dGY2NFJrV3lpVWRtaGZxYnp1NWVlS1k4";
+  const youtubeApiKey = Buffer.from(encodedYouTubeApiKey, "base64").toString("utf-8");
+  const openaiApiKey = "c2stcHJvai1EdVE3Q08yRTdvdVhYN0dSa2Y0eWxrNmpLczVqYlRDLXJycGZSX1JldllaM05LR1V4ZkVFOGQtWkNqeUtMaVAwQTRQam56eThvWVQzQmxia0ZKMVdDbkcwLXh0RkVqU1BVenV0azNDT2lwLXl6cEVUWmE3cVpMQkFXYXpVaWpDX2ZWaDNwUkFkVzFZMWtuWWRBUkNSQ3ByOHpJNEE=";
+  const decodedOpenAiKey = Buffer.from(openaiApiKey, 'base64').toString('utf-8');
+
+  console.log("Decoded YouTube API Key:", youtubeApiKey);
+  console.log("Decoded OpenAI API Key:", decodedOpenAiKey);
 
   if (!message || !userId) {
     return res.status(400).json({ message: 'Missing message or userId' });
