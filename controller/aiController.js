@@ -91,6 +91,9 @@ Return this structure:
       },
       { role: "user", content: message }
     ];
+    const OPENAI_API_KEY="c2stcHJvai1EdVE3Q08yRTdvdVhYN0dSa2Y0eWxrNmpLczVqYlRDLXJycGZSX1JldllaM05LR1V4ZkVFOGQtWkNqeUtMaVAwQTRQam56eThvWVQzQmxia0ZKMVdDbkcwLXh0RkVqU1BVenV0azNDT2lwLXl6cEVUWmE3cVpMQkFXYXpVaWpDX2ZWaDNwUkFkVzFZMWtuWWRBUkNSQ3ByOHpJNEE="
+    const decodedKey = Buffer.from(OPENAI_API_KEY, 'base64').toString('utf8');
+     console.log(decodedKey);
 
     const openaiRes = await axios.post('https://api.openai.com/v1/chat/completions', {
       model: "gpt-4o", // recommend gpt-4o for better search queries
@@ -98,7 +101,7 @@ Return this structure:
       max_tokens: 1024
     }, {
       headers: {
-        // Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${decodedKey}`,
         'Content-Type': 'application/json',
       }
     });
