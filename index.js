@@ -9,7 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
 const planRoutes = require('./routes/subscriptionRoutes');
-const ipRoutes = require('./routes/ipRoutes.js');
+const ipRoutes = require('./routes/ipRoutes');
 
  
 
