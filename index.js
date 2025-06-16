@@ -9,6 +9,9 @@ const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
 const planRoutes = require('./routes/subscriptionRoutes');
+const ipRoutes = require('./routes/ipRoutes');
+
+ 
 
 const db = require('./config');
 const app = express();
@@ -74,15 +77,24 @@ app.get('/upload/:imageName', (req, res) => {
 });
 
 
- 
+
+
+  
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+ 
+
+// createChatTable();
 
 app.use('/api/user', userRoutes);
 // app.use('/api/openai', openaiRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/plan', planRoutes);
+app.use('/api', ipRoutes);
+
+
+ 
 
 // app.use('/api/user', authRoutes);
 app.use(express.json());
