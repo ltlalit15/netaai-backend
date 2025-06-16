@@ -98,7 +98,7 @@ Return this structure:
       max_tokens: 1024
     }, {
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        // Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       }
     });
