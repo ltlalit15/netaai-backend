@@ -9,7 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
 const planRoutes = require('./routes/subscriptionRoutes');
-// const ipRoutes = require('./routes/ipRoutes.js');
+const ipRoutes = require('./routes/ipRoutes.js');
 
  
 
@@ -91,7 +91,7 @@ app.use('/api/user', userRoutes);
 // app.use('/api/openai', openaiRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/plan', planRoutes);
-// app.use('/api', ipRoutes);
+app.use('/api', ipRoutes);
 
 
  
