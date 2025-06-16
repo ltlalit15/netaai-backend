@@ -50,7 +50,7 @@ app.use(fileUpload({
   }
 }));
  
- 
+ // 
 // ✅ Upload folder static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(
