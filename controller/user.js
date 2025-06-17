@@ -69,21 +69,17 @@ const signUp = async (req, res) => {
  const editProfile = async (req, res) => {
   try {
     const id = req.params.id;
-     
-    const {
-      full_name, email, password, referredBy,
-      organizationName, website, numberOfElectricians, suppliesSource,
-      address, licenseNumber, referral,login_count
-    } = req.body;
 
-    // Check if user exists
+    // Get existing user
     const [existingUser] = await db.query('SELECT * FROM users WHERE id = ?', [id]);
     if (existingUser.length === 0) {
       return res.status(404).json({ status: "false", message: 'User not found', data: [] });
     }
 
-    // Handle Image Upload with Cloudinary
-    let image = existingUser[0].image; // Keep existing if no new upload
+    const existing = existingUser[0]; // shorthand
+
+    // Handle image upload
+    let image = existing.image;
     if (req.files && req.files.image) {
       const imageFile = req.files.image;
       const uploadResult = await cloudinary.uploader.upload(imageFile.tempFilePath, {
@@ -97,27 +93,36 @@ const signUp = async (req, res) => {
       }
     }
 
-    // Hash password if provided
-    let hashedPassword = existingUser[0].password;
-    if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
+    // Fields from body (if undefined, fallback to existing values)
+    const full_name = req.body.full_name ?? existing.full_name;
+    const email = req.body.email ?? existing.email;
+    const referredBy = req.body.referredBy ?? existing.referredBy;
+    const organizationName = req.body.organizationName ?? existing.organization_name;
+    const website = req.body.website ?? existing.website;
+    const numberOfElectricians = req.body.numberOfElectricians ?? existing.number_of_electricians;
+    const suppliesSource = req.body.suppliesSource ?? existing.supplies_source;
+    const address = req.body.address ?? existing.address;
+    const licenseNumber = req.body.licenseNumber ?? existing.license_number;
+    const referral = req.body.referral ?? existing.referral;
+    const login_count = req.body.login_count ?? existing.login_count;
+
+    // Password hash (only if provided)
+    let hashedPassword = existing.password;
+    if (req.body.password) {
+      hashedPassword = await bcrypt.hash(req.body.password, 10);
     }
 
-    // Update user details
+    // Update query
     await db.query(
       `UPDATE users SET
           full_name = ?, email = ?, password = ?, referredBy = ?,
           organization_name = ?, website = ?, number_of_electricians = ?, supplies_source = ?,
-          address = ?,
-          license_number = ?, referral = ?, image = ?, login_count = ?
+          address = ?, license_number = ?, referral = ?, image = ?, login_count = ?
        WHERE id = ?`,
       [
         full_name, email, hashedPassword, referredBy,
         organizationName, website, numberOfElectricians, suppliesSource,
-        address,
-        licenseNumber, referral, image,
-        login_count,
-        id
+        address, licenseNumber, referral, image, login_count, id
       ]
     );
 
