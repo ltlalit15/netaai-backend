@@ -91,7 +91,7 @@ app.use('/api/user', userRoutes);
 // app.use('/api/openai', openaiRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/plan', planRoutes);
-app.use('/api', ipRoutes);
+app.use('/api/ip', ipRoutes);
 
 
  
