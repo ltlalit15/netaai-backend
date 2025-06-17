@@ -134,7 +134,10 @@ Return this structure:
     let videos = [];
     if (searchQuery) {
       try {
-        const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+        // YouTube API Key (Base64 Encoded)
+        const YOUTUBE_API_KEY = "QUl6YVN5QndIYzBDVXU5dGY2NFJrV3lpVWRtaGZxYnp1NWVlS1k4";
+        const decodedYoutubeKey = Buffer.from(YOUTUBE_API_KEY, 'base64').toString('utf8');
+        const youtubeApiKey = decodedYoutubeKey;
         const youtubeRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
           params: {
             key: youtubeApiKey,
