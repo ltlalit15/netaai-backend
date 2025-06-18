@@ -298,7 +298,7 @@ const forgotPassword = async (req, res) => {
             },
         });
 
-       const resetLink = `http://localhost:5173/reset-password/${resetToken}`; // Example link, modify for your app
+       const resetLink = `https://askneta.com/reset-password/${resetToken}`; // Example link, modify for your app
 
 await transporter.sendMail({
     from: 'support@ask-neta.com',
