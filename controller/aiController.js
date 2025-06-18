@@ -73,7 +73,7 @@ exports.deepSeekChat = async (req, res) => {
         content: `
 You are a helpful electrical code assistant. You must always reply in STRICT valid JSON format.
 
-Return this structure:
+Return the following structure ONLY:
 
 {
   "explanation": string, 
@@ -81,12 +81,16 @@ Return this structure:
   "nec_references": [
       { "code": string, "link": string, "description": string }
   ],
-  "video_search_query": string
+  "video_search_query": string,
+  "suggestions": [
+    { "title": string }
+  ]
 }
 
-- "video_search_query" should be precise YouTube search keywords to find instructional NEC related electrical videos.
-- Do not invent YouTube links.
-- Your response will be directly parsed as JSON.
+- "suggestions" must include 3–5 helpful follow-up electrical or NEC-related questions the user might ask next.
+- Suggestions must be based on the original user question and context of the explanation.
+- Do not invent YouTube URLs — only generate the search query for later YouTube lookup.
+- Your output will be parsed directly as JSON, so it must be VALID JSON only.
 `
       },
       { role: "user", content: message }
@@ -114,6 +118,7 @@ Return this structure:
     let stepByStep = parsed.step_by_step || [];
     const necReferences = parsed.nec_references || [];
     const searchQuery = parsed.video_search_query;
+    const suggestions = parsed.suggestions || [];
 
     if (typeof stepByStep === "string") {
       stepByStep = stepByStep.split("\n").map(s => s.trim()).filter(Boolean);
@@ -175,7 +180,10 @@ Return this structure:
       }
     }
 
-    res.json(formatResponse(explanation, stepByStep, normalizedNecRefs, videos));
+     res.json({
+      ...formatResponse(explanation, stepByStep, normalizedNecRefs, videos),
+      suggestions: suggestions
+    });
 
   } catch (err) {
     console.error("Error in deepSeekChat:", err.response?.data || err.message);
