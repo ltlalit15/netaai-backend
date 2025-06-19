@@ -67,7 +67,7 @@ exports.deepSeekChat = async (req, res) => {
       [userId, 'user', message, currentSessionId]
     );
 
-    Fetch previous chat history
+   // Fetch previous chat history
     const [historyRows] = await db.query('SELECT role, content FROM chat_history WHERE session_id = ? ORDER BY created_at ASC', [currentSessionId]);
     const messages = [
       {
