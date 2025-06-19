@@ -67,6 +67,8 @@ exports.deepSeekChat = async (req, res) => {
       [userId, 'user', message, currentSessionId]
     );
 
+    Fetch previous chat history
+    const [historyRows] = await db.query('SELECT role, content FROM chat_history WHERE session_id = ? ORDER BY created_at ASC', [currentSessionId]);
     const messages = [
       {
         role: "system",
@@ -93,6 +95,10 @@ Return the following structure ONLY:
 - Your output will be parsed directly as JSON, so it must be VALID JSON only.
 `
       },
+        ...historyRows.map(row => ({
+        role: row.role,
+        content: row.content
+      })),
       { role: "user", content: message }
     ];
     const OPENAI_API_KEY="c2stcHJvai1EdVE3Q08yRTdvdVhYN0dSa2Y0eWxrNmpLczVqYlRDLXJycGZSX1JldllaM05LR1V4ZkVFOGQtWkNqeUtMaVAwQTRQam56eThvWVQzQmxia0ZKMVdDbkcwLXh0RkVqU1BVenV0azNDT2lwLXl6cEVUWmE3cVpMQkFXYXpVaWpDX2ZWaDNwUkFkVzFZMWtuWWRBUkNSQ3ByOHpJNEE="
@@ -190,13 +196,6 @@ Return the following structure ONLY:
     res.status(500).json({ message: 'AI error' });
   }
 };
-
-
-
-
-
-
-
 
 
 // Helper function to create HTML content
