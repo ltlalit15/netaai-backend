@@ -142,9 +142,6 @@ const signUp = async (req, res) => {
 };
 
 
-
-
-
 // Get All Users
 const getAllUsers = async (req, res) => {
     try {
