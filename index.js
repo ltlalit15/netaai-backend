@@ -10,6 +10,7 @@ const fileUpload = require('express-fileupload');
 const aiRoutes = require('./routes/aiRoutes');
 const planRoutes = require('./routes/subscriptionRoutes');
 const ipRoutes = require('./routes/ipRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
  
 
@@ -92,6 +93,16 @@ app.use('/api/user', userRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/plan', planRoutes);
 app.use('/api/ip', ipRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Admin dashboard routes
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
+});
+
+app.get('/admin/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
+});
 
 
  
