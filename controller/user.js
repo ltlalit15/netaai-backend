@@ -407,9 +407,6 @@ const resetPasswordFromToken = async (req, res) => {
     }
 };
 
-
-
-
 // Login
 const login = async (req, res) => {
   try {
@@ -417,7 +414,7 @@ const login = async (req, res) => {
 
     // Fetch user data along with login_count
     const [user] = await db.query(
-      'SELECT id, email, password, full_name, tokenVersion, login_count FROM users WHERE email = ?', 
+      'SELECT id, email, password, full_name, tokenVersion, login_count, is_admin FROM users WHERE email = ?', 
       [email]
     );
 
@@ -465,7 +462,8 @@ const login = async (req, res) => {
       name: user[0].full_name,
       device_usage: deviceUsage,
       token: token,
-      login_count: newLoginCount
+      login_count: newLoginCount,
+      is_admin : user[0].is_admin
     };
 
     res.json({ status: "true", message: 'Login successful', data: userData });
