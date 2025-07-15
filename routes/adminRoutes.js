@@ -38,11 +38,8 @@ router.post('/users/:id/deactivate', authMiddleware, adminMiddleware, deactivate
 router.post('/users/:id/reactivate', authMiddleware, adminMiddleware, reactivateUser);
 
 // Analytics Routes
-// router.get('/analytics/user/:id', authMiddleware, adminMiddleware, getUserAnalytics);
-// router.get('/analytics/global', authMiddleware, adminMiddleware, getGlobalAnalytics);
-router.get('/analytics/user/:id', getUserAnalytics);
-router.get('/analytics', getGlobalAnalytics);
-
+ router.get('/analytics/user/:id', authMiddleware, adminMiddleware, getUserAnalytics);
+ router.get('/analytics/global', authMiddleware, adminMiddleware, getGlobalAnalytics);
 
 // Reports Routes
 router.get('/reports/:type', authMiddleware, adminMiddleware, generateReport);
