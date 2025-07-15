@@ -240,6 +240,8 @@ exports.createSession = async (req, res) => {
       "INSERT INTO chat_sessions (user_id, title) VALUES (?, ?)",
       [userId, title || "New Chat"]
     );
+    // ✅ Update user's last_active timestamp
+    await db.query('UPDATE users SET last_active = NOW() WHERE id = ?', [userId]);
 
     res.json({ sessionId: result.insertId });
   } catch (error) {
