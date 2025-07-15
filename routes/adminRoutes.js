@@ -29,9 +29,9 @@ const adminMiddleware = require('../middleware/adminMiddleware');
 const router = express.Router();
 
 // User Management Routes
-router.get('/users',  getAllUsersWithAnalytics);
-router.get('/users/:id', getUserProfile);
-router.patch('/users/:id', updateUser);
+router.get('/users',  authMiddleware, getAllUsersWithAnalytics);
+router.get('/users/:id', authMiddleware, getUserProfile);
+router.patch('/users/:id', authMiddleware, updateUser);
 router.post('/users', authMiddleware, adminMiddleware, createUser);
 router.post('/users/:id/comp-access', authMiddleware, adminMiddleware, compUserAccess);
 router.post('/users/:id/deactivate', authMiddleware, adminMiddleware, deactivateUser);
