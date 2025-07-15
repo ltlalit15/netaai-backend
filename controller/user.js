@@ -29,7 +29,7 @@ cloudinary.config({
 //Register User
 const signUp = async (req, res) => {
     try {
-        const { full_name, email, password, referredBy, phone_number } = req.body;
+        const { full_name, email, password, referredBy, phone_number , tier, role,status} = req.body;
 
         // Check if user already exists (by email)
         const [existingUser] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -40,23 +40,44 @@ const signUp = async (req, res) => {
         // Hash Password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const platform = req.headers['x-platform'] || 'web';
+         const is_admin = role === 'admin' ? true : false;
+ 
+
         // Insert new user into the database
         const [result] = await db.query(
-            'INSERT INTO users (full_name, email, password, referredBy, phone_number) VALUES (?, ?, ?, ?, ?)', 
-            [full_name, email, hashedPassword, referredBy, phone_number]
+            'INSERT INTO users (full_name, email, password, referredBy, phone_number, device_usage,tier, is_admin,status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+            [full_name, email, hashedPassword, referredBy, phone_number, JSON.stringify({ [platform]: 1 }),tier, is_admin,status]
         );
 
         // Fetch the newly created user (excluding password)
-        const [newUser] = await db.query('SELECT id, full_name, email, referredBy, phone_number FROM users WHERE id = ?', [result.insertId]);
+        const [newUser] = await db.query('SELECT id, full_name, email, referredBy, phone_number,tier, plan,device_usage, is_admin FROM users WHERE id = ?', [result.insertId]);
+
+       
 
         // Generate JWT Token
         const token = jwt.sign({ id: newUser[0].id }, "a3b5c1d9e8f71234567890abcdef1234567890abcdefabcdef1234567890aber", { expiresIn: '1h' });
 
+ const userRow = newUser[0];
+        const userData = {
+          id: userRow.id,
+          full_name: userRow.full_name,
+          email: userRow.email,
+          referredBy: userRow.referredBy,
+          phone_number: userRow.phone_number,
+          tier: userRow.tier, // ✅ This guarantees tier appears
+          plan: userRow.plan || null,
+          device_usage: JSON.parse(userRow.device_usage || '{}'),
+          status: userRow.status,
+          is_admin: userRow.is_admin,
+          token
+        };
         // Send response
         res.status(201).json({
             status: "true",
             message: 'User registered successfully',
-            data: { ...newUser[0], token }
+            data: userData
+            // data: { ...newUser[0], token }
         });
 
     } catch (error) {
@@ -64,7 +85,6 @@ const signUp = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-
 
  const editProfile = async (req, res) => {
   try {
@@ -141,11 +161,14 @@ const signUp = async (req, res) => {
   }
 };
 
-
 // Get All Users
 const getAllUsers = async (req, res) => {
     try {
-        const [users] = await db.query('SELECT * FROM users');
+        const [users] = await db.query(
+            `SELECT u.*, sp.plan_name AS tier
+             FROM users u
+             LEFT JOIN subscriptions_plan sp ON u.plan = sp.id`
+        );
 
         if (users.length === 0) {
             return res.status(404).json({ status: "false", message: "No users found", data: [] });
@@ -157,6 +180,7 @@ const getAllUsers = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
 
 
 // Get User by ID
@@ -387,7 +411,7 @@ const resetPasswordFromToken = async (req, res) => {
 
 
 // Login
- const login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -411,6 +435,20 @@ const resetPasswordFromToken = async (req, res) => {
     const newLoginCount = (user[0].login_count || 0) + 1;
     await db.query('UPDATE users SET login_count = ? WHERE id = ?', [newLoginCount, user[0].id]);
 
+    // Update last_active timestamp
+    await db.query('UPDATE users SET last_active = NOW() WHERE id = ?', [user[0].id]);
+
+    // Device usage tracking logic
+
+    const platform = req.headers['x-platform'] || 'web';
+    // const platform = req.body.platform || 'web'; // default to web if not provided
+    let deviceUsage = { web: 0, ios: 0, android: 0 };
+    if (user[0].device_usage) {
+      try { deviceUsage = JSON.parse(user[0].device_usage); } catch (e) {}
+    }
+    deviceUsage[platform] = (deviceUsage[platform] || 0) + 1;
+    await db.query('UPDATE users SET device_usage = ? WHERE id = ?', [JSON.stringify(deviceUsage), user[0].id]);
+
     // Generate JWT Token (Include tokenVersion)
     const token = jwt.sign(
       { id: user[0].id, email: user[0].email, tokenVersion: user[0].tokenVersion },
@@ -418,11 +456,14 @@ const resetPasswordFromToken = async (req, res) => {
       { expiresIn: '1h' }
     );
 
+    console.log("deviceUsage",deviceUsage)
+
     // Prepare response data (remove password)
     const userData = {
       id: user[0].id.toString(),
       email: user[0].email,
       name: user[0].full_name,
+      device_usage: deviceUsage,
       token: token,
       login_count: newLoginCount
     };
@@ -434,7 +475,6 @@ const resetPasswordFromToken = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 
 
 
