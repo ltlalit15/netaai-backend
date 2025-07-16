@@ -382,6 +382,7 @@ const generateDeviceTrendsReport = async (period) => {
 
 module.exports = {
     getUserAnalytics,
+    getUsageSummary,
     getGlobalAnalytics,
     generateReport,
     exportUserData
