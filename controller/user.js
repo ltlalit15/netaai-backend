@@ -67,7 +67,9 @@ const signUp = async (req, res) => {
           phone_number: userRow.phone_number,
           tier: userRow.tier, // ✅ This guarantees tier appears
           plan: userRow.plan || null,
-          device_usage: JSON.parse(userRow.device_usage || '{}'),
+          device_usage: typeof userRow.device_usage === 'string'
+            ? JSON.parse(userRow.device_usage)
+            : userRow.device_usage || {},
           status: userRow.status,
           is_admin: userRow.is_admin,
           token
