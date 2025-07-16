@@ -4,20 +4,33 @@ const db = require('../config');
 const getUserAnalytics = async (req, res) => {
     try {
         const { id } = req.params;
-        const { period = '30' } = req.query; 
+        const { start_date, end_date, period } = req.query;
 
-        // Get user's chat sessions in the specified period
+        let startDate, endDate;
+        if (start_date && end_date) {
+            startDate = start_date;
+            endDate = end_date;
+        } else {
+            // Default: last N days (period), default 30
+            const days = period || '30';
+            endDate = new Date().toISOString().slice(0, 10);
+            const d = new Date(endDate);
+            d.setDate(d.getDate() - (parseInt(days) - 1));
+            startDate = d.toISOString().slice(0, 10);
+        }
+
+        // Get user's chat sessions in the specified period or date range
         const [sessions] = await db.query(
             `SELECT * FROM chat_sessions 
-             WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
-            [id, period]
+             WHERE user_id = ? AND created_at BETWEEN ? AND ?`,
+            [id, startDate, endDate]
         );
 
         // Get chat history for analytics
         const [chatHistory] = await db.query(
             `SELECT * FROM chat_history 
-             WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
-            [id, period]
+             WHERE user_id = ? AND created_at BETWEEN ? AND ?`,
+            [id, startDate, endDate]
         );
 
         // Calculate analytics
@@ -28,7 +41,9 @@ const getUserAnalytics = async (req, res) => {
             session_trend: await getSessionTrend(id, period),
             platform_usage: await getPlatformUsage(id, period),
             top_topics: await getTopTopics(chatHistory),
-            usage_anomalies: await detectUsageAnomalies(id, period)
+            usage_anomalies: await detectUsageAnomalies(id, period),
+            start_date: startDate,
+            end_date: endDate
         };
 
         res.status(200).json({
@@ -41,6 +56,45 @@ const getUserAnalytics = async (req, res) => {
         res.status(500).json({ status: "false", message: "Server error" });
     }
 };
+const getUsageSummary = async (req, res) => {
+  try {
+    const { start_date, end_date } = req.query;
+
+    // Default: last 30 days
+    const startDate = start_date || '1970-01-01';
+    const endDate = end_date || new Date().toISOString().slice(0, 10);
+
+    // Total messages
+    const [messages] = await db.query(
+      SELECT COUNT(*) as total_messages FROM chat_history WHERE created_at BETWEEN ? AND ?,
+      [startDate, endDate]
+    );
+
+    // Total sessions
+    const [sessions] = await db.query(
+      SELECT COUNT(*) as total_sessions FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      [startDate, endDate]
+    );
+
+    // Total users active in this period
+    const [activeUsers] = await db.query(
+      SELECT COUNT(DISTINCT user_id) as active_users FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      [startDate, endDate]
+    );
+
+    res.json({
+      total_messages: messages[0].total_messages,
+      total_sessions: sessions[0].total_sessions,
+      active_users: activeUsers[0].active_users,
+      start_date: startDate,
+      end_date: endDate
+    });
+  } catch (error) {
+    console.error('Error fetching usage summary:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 
 // Get global analytics
 const getGlobalAnalytics = async (req, res) => {
