@@ -66,19 +66,19 @@ const getUsageSummary = async (req, res) => {
 
     // Total messages
     const [messages] = await db.query(
-      SELECT COUNT(*) as total_messages FROM chat_history WHERE created_at BETWEEN ? AND ?,
+      `SELECT COUNT(*) as total_messages FROM chat_history WHERE created_at BETWEEN ? AND ?`,
       [startDate, endDate]
     );
 
     // Total sessions
     const [sessions] = await db.query(
-      SELECT COUNT(*) as total_sessions FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      `SELECT COUNT(*) as total_sessions FROM chat_sessions WHERE created_at BETWEEN ? AND ?`,
       [startDate, endDate]
     );
 
     // Total users active in this period
     const [activeUsers] = await db.query(
-      SELECT COUNT(DISTINCT user_id) as active_users FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      `SELECT COUNT(DISTINCT user_id) as active_users FROM chat_sessions WHERE created_at BETWEEN ? AND ?`,
       [startDate, endDate]
     );
 
