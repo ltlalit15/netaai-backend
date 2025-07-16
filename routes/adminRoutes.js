@@ -9,6 +9,7 @@ const {
 
 const {
     getUserAnalytics,
+    getUsageSummary,
     getGlobalAnalytics,
     generateReport,
     exportUserData
@@ -40,6 +41,7 @@ router.post('/users/:id/reactivate', authMiddleware, adminMiddleware, reactivate
 // Analytics Routes
  router.get('/analytics/user/:id', authMiddleware, adminMiddleware, getUserAnalytics);
  router.get('/analytics/global', authMiddleware, adminMiddleware, getGlobalAnalytics);
+router.get('/usage-summary', authMiddleware, adminMiddleware, getUsageSummary);
 
 // Reports Routes
 router.get('/reports/:type', authMiddleware, adminMiddleware, generateReport);
