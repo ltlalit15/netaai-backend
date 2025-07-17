@@ -56,45 +56,6 @@ const getUserAnalytics = async (req, res) => {
         res.status(500).json({ status: "false", message: "Server error" });
     }
 };
-const getUsageSummary = async (req, res) => {
-  try {
-    const { start_date, end_date } = req.query;
-
-    // Default: last 30 days
-    const startDate = start_date || '1970-01-01';
-    const endDate = end_date || new Date().toISOString().slice(0, 10);
-
-    // Total messages
-    const [messages] = await db.query(
-      `SELECT COUNT(*) as total_messages FROM chat_history WHERE created_at BETWEEN ? AND ?`,
-      [startDate, endDate]
-    );
-
-    // Total sessions
-    const [sessions] = await db.query(
-      `SELECT COUNT(*) as total_sessions FROM chat_sessions WHERE created_at BETWEEN ? AND ?`,
-      [startDate, endDate]
-    );
-
-    // Total users active in this period
-    const [activeUsers] = await db.query(
-      `SELECT COUNT(DISTINCT user_id) as active_users FROM chat_sessions WHERE created_at BETWEEN ? AND ?`,
-      [startDate, endDate]
-    );
-
-    res.json({
-      total_messages: messages[0].total_messages,
-      total_sessions: sessions[0].total_sessions,
-      active_users: activeUsers[0].active_users,
-      start_date: startDate,
-      end_date: endDate
-    });
-  } catch (error) {
-    console.error('Error fetching usage summary:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
 
 // Get global analytics
 const getGlobalAnalytics = async (req, res) => {
@@ -223,13 +184,13 @@ const generateReport = async (req, res) => {
         if (format === 'csv') {
             const csv = convertToCSV(reportData);
             res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', `attachment; filename="${type}-report-${new Date().toISOString().split('T')[0]}.csv"`);
+            res.setHeader('Content-Disposition', attachment; filename="${type}-report-${new Date().toISOString().split('T')[0]}.csv");
             return res.send(csv);
         }
 
         res.status(200).json({
             status: "true",
-            message: `${type} report generated successfully`,
+            message: ${type} report generated successfully,
             data: reportData
         });
     } catch (error) {
@@ -246,12 +207,52 @@ const exportUserData = async (req, res) => {
         const csv = convertToCSV(users);
         
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="users-export-${new Date().toISOString().split('T')[0]}.csv"`);
+        res.setHeader('Content-Disposition', attachment; filename="users-export-${new Date().toISOString().split('T')[0]}.csv");
         res.send(csv);
     } catch (error) {
         console.error("Error exporting user data:", error);
         res.status(500).json({ status: "false", message: "Server error" });
     }
+};
+
+// Add this function
+const getUsageSummary = async (req, res) => {
+  try {
+    const { start_date, end_date } = req.query;
+
+    // Default: last 30 days
+    const startDate = start_date || '1970-01-01';
+    const endDate = end_date || new Date().toISOString().slice(0, 10);
+
+    // Total messages
+    const [messages] = await db.query(
+      SELECT COUNT(*) as total_messages FROM chat_history WHERE created_at BETWEEN ? AND ?,
+      [startDate, endDate]
+    );
+
+    // Total sessions
+    const [sessions] = await db.query(
+      SELECT COUNT(*) as total_sessions FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      [startDate, endDate]
+    );
+
+    // Total users active in this period
+    const [activeUsers] = await db.query(
+      SELECT COUNT(DISTINCT user_id) as active_users FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      [startDate, endDate]
+    );
+
+    res.json({
+      total_messages: messages[0].total_messages,
+      total_sessions: sessions[0].total_sessions,
+      active_users: activeUsers[0].active_users,
+      start_date: startDate,
+      end_date: endDate
+    });
+  } catch (error) {
+    console.error('Error fetching usage summary:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 // Helper functions
@@ -315,7 +316,7 @@ const convertToCSV = (data) => {
     for (const row of data) {
         const values = headers.map(header => {
             const value = row[header];
-            return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
+            return typeof value === 'string' ? "${value.replace(/"/g, '""')}" : value;
         });
         csvRows.push(values.join(','));
     }
@@ -382,8 +383,8 @@ const generateDeviceTrendsReport = async (period) => {
 
 module.exports = {
     getUserAnalytics,
-    getUsageSummary,
     getGlobalAnalytics,
     generateReport,
-    exportUserData
-}; 
+    exportUserData,
+    getUsageSummary
+};
