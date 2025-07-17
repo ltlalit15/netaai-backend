@@ -206,17 +206,22 @@ const generateReport = async (req, res) => {
 const exportUserData = async (req, res) => {
     try {
         const [users] = await db.query('SELECT * FROM users');
-        
-        const csv = convertToCSV(users);
-        
+
+        const csv = convertToCSV(users); // Convert JSON to CSV string
+
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', attachment; filename="users-export-${new Date().toISOString().split('T')[0]}.csv");
-        res.send(csv);
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="users-export-${new Date().toISOString().split('T')[0]}.csv"`
+        );
+
+        res.send(csv); // ✅ Send CSV string as response
     } catch (error) {
         console.error("Error exporting user data:", error);
         res.status(500).json({ status: "false", message: "Server error" });
     }
 };
+
 
 // Add this function
 const getUsageSummary = async (req, res) => {
