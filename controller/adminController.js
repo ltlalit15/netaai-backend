@@ -57,37 +57,45 @@ const getAllUsersWithAnalytics = async (req, res) => {
 
     const totalUsers = countResult[0].total;
 
-    // ✅ Safe parsing for device_usage
+    // ✅ Safe parsing for device_usage with console logs
     for (let user of users) {
       try {
-        const du = user.device_usage;
+        let usage = user.device_usage;
+        console.log(`📦 User ID: ${user.id}, Raw device_usage:`, usage);
 
-        if (!du) {
+        if (!usage) {
+          console.log(`⚠️ No device_usage for user ID ${user.id}, setting default`);
           user.device_usage = { web: 0, ios: 0, android: 0 };
-        } else if (typeof du === 'string') {
+        } else if (typeof usage === 'string') {
           try {
-            const parsed = JSON.parse(du);
+            const parsed = JSON.parse(usage);
             if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
               user.device_usage = parsed;
+              console.log(`✅ Parsed string device_usage for user ID ${user.id}:`, parsed);
             } else {
-              throw new Error('Invalid parsed structure');
+              throw new Error('Parsed device_usage is not a valid object');
             }
           } catch (err) {
-            console.warn(`❌ Failed to parse device_usage (User ID ${user.id}): ${err.message}`);
+            console.warn(`❌ JSON parse failed for user ID ${user.id}:`, err.message);
             user.device_usage = { web: 0, ios: 0, android: 0 };
           }
-        } else if (typeof du === 'object' && du !== null && !Array.isArray(du)) {
-          user.device_usage = du;
+        } else if (typeof usage === 'object' && usage !== null && !Array.isArray(usage)) {
+          user.device_usage = usage;
+          console.log(`🟢 device_usage already an object for user ID ${user.id}:`, usage);
         } else {
+          console.warn(`⚠️ Invalid type of device_usage for user ID ${user.id}, setting default`);
           user.device_usage = { web: 0, ios: 0, android: 0 };
         }
+
       } catch (e) {
-        console.warn(`❌ Invalid device_usage (User ID ${user.id}):`, e.message);
+        console.error(`🔥 Error handling device_usage for user ID ${user.id}:`, e.message);
         user.device_usage = { web: 0, ios: 0, android: 0 };
       }
     }
 
-    // ✅ Response send
+    // ✅ Final response
+    console.log(`📊 Sending ${users.length} users (page ${page}/${Math.ceil(totalUsers / limit)})`);
+
     res.status(200).json({
       status: "true",
       message: "Users retrieved successfully",
@@ -103,10 +111,11 @@ const getAllUsersWithAnalytics = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("🔥 Error fetching users:", error); // Debug info
+    console.error("🔥 Error fetching users:", error);
     res.status(500).json({ status: "false", message: "Server error" });
   }
 };
+
 
 // Get detailed user profile
 const getUserProfile = async (req, res) => {
