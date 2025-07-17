@@ -15,7 +15,6 @@ const getAllUsersWithAnalytics = async (req, res) => {
         if (search) {
             whereClause += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
-
         }
 
         if (status) {
@@ -28,13 +27,13 @@ const getAllUsersWithAnalytics = async (req, res) => {
             params.push(tier);
         }
 
-        // Get users with basic info, join plan
+        // ✅ Get users with basic info, join plan
         const [users] = await db.query(
             `SELECT 
                 u.id, u.full_name, u.email, u.status, sp.plan_name AS tier, u.created_at,
                 u.last_active, u.device_usage, u.platform_started,
                 COUNT(DISTINCT ch.id) as total_sessions,
-                AVG(session_duration) as avg_session_duration
+                IFNULL(AVG(session_duration), 0) as avg_session_duration
             FROM users u
             LEFT JOIN subscriptions_plan sp ON u.plan = sp.id
             LEFT JOIN chat_sessions ch ON u.id = ch.user_id
@@ -51,23 +50,32 @@ const getAllUsersWithAnalytics = async (req, res) => {
             [...params, parseInt(limit), offset]
         );
 
-        // Get total count for pagination
+        // ✅ Get total count for pagination
         const [countResult] = await db.query(
-            SELECT COUNT(*) as total FROM users u LEFT JOIN subscriptions_plan sp ON u.plan = sp.id ${whereClause},
+            `SELECT COUNT(*) as total FROM users u LEFT JOIN subscriptions_plan sp ON u.plan = sp.id ${whereClause}`,
             params
         );
 
         const totalUsers = countResult[0].total;
 
-        // Add device usage breakdown for each user
+        // ✅ Safely parse device_usage for each user
         for (let user of users) {
-            if (user.device_usage) {
-                user.device_usage = JSON.parse(user.device_usage);
-            } else {
+            try {
+                console.log(`📦 Parsing device_usage for user ID ${user.id}`);
+                if (user.device_usage) {
+                    user.device_usage = typeof user.device_usage === 'string'
+                        ? JSON.parse(user.device_usage)
+                        : user.device_usage;
+                } else {
+                    user.device_usage = { web: 0, ios: 0, android: 0 };
+                }
+            } catch (err) {
+                console.warn(`❌ Error parsing device_usage for user ID ${user.id}:`, err.message);
                 user.device_usage = { web: 0, ios: 0, android: 0 };
             }
         }
 
+        // ✅ Send response
         res.status(200).json({
             status: "true",
             message: "Users retrieved successfully",
@@ -81,11 +89,13 @@ const getAllUsersWithAnalytics = async (req, res) => {
                 }
             }
         });
+
     } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("🔥 Error fetching users:", error);
         res.status(500).json({ status: "false", message: "Server error" });
     }
 };
+
 
 
 // Get detailed user profile
