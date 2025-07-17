@@ -269,18 +269,48 @@ const getSessionTrend = async (userId, period) => {
 };
 
 const getPlatformUsage = async (userId, period) => {
-    const [usage] = await db.query(
-        `SELECT device_usage 
-         FROM users 
-         WHERE id = ?`,
-        [userId]
-    );
-    
-    if (usage.length > 0 && usage[0].device_usage) {
-        return JSON.parse(usage[0].device_usage);
+    try {
+        const [usage] = await db.query(
+            `SELECT device_usage 
+             FROM users 
+             WHERE id = ?`,
+            [userId]
+        );
+
+        if (usage.length > 0) {
+            const rawUsage = usage[0].device_usage;
+
+            if (!rawUsage) {
+                return { web: 0, ios: 0, android: 0 };
+            }
+
+            if (typeof rawUsage === 'string') {
+                try {
+                    const parsed = JSON.parse(rawUsage);
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        return parsed;
+                    } else {
+                        throw new Error("Invalid parsed structure");
+                    }
+                } catch (err) {
+                    console.warn(`❌ JSON parse failed for user ID ${userId}:`, err.message);
+                    return { web: 0, ios: 0, android: 0 };
+                }
+            }
+
+            if (typeof rawUsage === 'object' && rawUsage !== null) {
+                return rawUsage;
+            }
+        }
+
+        return { web: 0, ios: 0, android: 0 };
+
+    } catch (error) {
+        console.error(`🔥 Error fetching platform usage for user ID ${userId}:`, error.message);
+        return { web: 0, ios: 0, android: 0 };
     }
-    return { web: 0, ios: 0, android: 0 };
 };
+
 
 const getTopTopics = async (chatHistory) => {
     const topics = {};
