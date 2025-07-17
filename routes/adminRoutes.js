@@ -39,7 +39,7 @@ router.post('/users/:id/deactivate', authMiddleware, adminMiddleware, deactivate
 router.post('/users/:id/reactivate', authMiddleware, adminMiddleware, reactivateUser);
 
 // Analytics Routes
- router.get('/getUserAnalytics/user/:id', authMiddleware, adminMiddleware, getUserAnalytics);
+ router.get('/analytics/user/:id', authMiddleware, adminMiddleware, getUserAnalytics);
  router.get('/analytics/global', authMiddleware, adminMiddleware, getGlobalAnalytics);
 router.get('/usage-summary', authMiddleware, adminMiddleware, getUsageSummary);
 
