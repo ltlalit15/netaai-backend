@@ -48,7 +48,7 @@ const signUp = async (req, res) => {
         // Insert new user into the database
         const [result] = await db.query(
             'INSERT INTO users (full_name, email, password, referredBy, phone_number, device_usage,tier, is_admin,status, platform_started,last_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-            [full_name, email, hashedPassword, referredBy, phone_number, JSON.stringify({ [platform]: 1 }),tier, is_admin,status, platform, currentTime]      ]
+            [full_name, email, hashedPassword, referredBy, phone_number, JSON.stringify({ [platform]: 1 }),tier, is_admin,status, platform, currentTime]
         );
 
         // Fetch the newly created user (excluding password)
