@@ -60,20 +60,32 @@ const getAllUsersWithAnalytics = async (req, res) => {
 
      for (let user of users) {
   try {
-    if (user.device_usage) {
-      if (typeof user.device_usage === 'string' && user.device_usage.trim().startsWith('{')) {
-        user.device_usage = JSON.parse(user.device_usage);
-      } else if (typeof user.device_usage !== 'object') {
+    const du = user.device_usage;
+
+    if (!du) {
+      user.device_usage = { web: 0, ios: 0, android: 0 };
+    } else if (typeof du === 'string') {
+      try {
+        user.device_usage = JSON.parse(du);
+        if (typeof user.device_usage !== 'object' || Array.isArray(user.device_usage)) {
+          throw new Error('Parsed value is not a valid object');
+        }
+      } catch (err) {
+        console.warn(`Failed to parse device_usage (User ID ${user.id}): ${err.message}`);
         user.device_usage = { web: 0, ios: 0, android: 0 };
       }
+    } else if (typeof du === 'object') {
+      // Already a valid object, keep as is
     } else {
       user.device_usage = { web: 0, ios: 0, android: 0 };
     }
+
   } catch (e) {
-    console.warn(`Invalid JSON in device_usage (User ID ${user.id}):`, e.message);
+    console.warn(`Invalid device_usage (User ID ${user.id}):`, e.message);
     user.device_usage = { web: 0, ios: 0, android: 0 };
   }
 }
+
 
 
         res.status(200).json({
