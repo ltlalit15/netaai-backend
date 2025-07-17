@@ -60,30 +60,20 @@ const getUserAnalytics = async (req, res) => {
 // Get global analytics
 const getGlobalAnalytics = async (req, res) => {
     try {
-        const { period = '30' } = req.query; // days
+        const { period = '30' } = req.query;
 
-        // Daily Active Users
         const [dau] = await db.query(
-            `SELECT COUNT(DISTINCT user_id) as count 
-             FROM chat_sessions 
-             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)`
+            `SELECT COUNT(DISTINCT user_id) as count FROM chat_sessions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)`
         );
 
-        // Weekly Active Users
         const [wau] = await db.query(
-            `SELECT COUNT(DISTINCT user_id) as count 
-             FROM chat_sessions 
-             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
+            `SELECT COUNT(DISTINCT user_id) as count FROM chat_sessions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
         );
 
-        // Monthly Active Users
         const [mau] = await db.query(
-            `SELECT COUNT(DISTINCT user_id) as count 
-             FROM chat_sessions 
-             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
+            `SELECT COUNT(DISTINCT user_id) as count FROM chat_sessions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
         );
 
-        // Platform usage breakdown
         const [platformUsage] = await db.query(
             `SELECT 
                 SUM(JSON_EXTRACT(device_usage, '$.web')) as web_users,
@@ -93,7 +83,6 @@ const getGlobalAnalytics = async (req, res) => {
              WHERE device_usage IS NOT NULL`
         );
 
-        // Top questions/topics
         const [topTopics] = await db.query(
             `SELECT content, COUNT(*) as count 
              FROM chat_history 
@@ -104,25 +93,12 @@ const getGlobalAnalytics = async (req, res) => {
             [period]
         );
 
-        // Conversion funnel
         const [conversionData] = await db.query(
-            `SELECT 
-                sp.plan_name AS tier,
-                COUNT(*) as count
-             FROM users u
-             LEFT JOIN subscriptions_plan sp ON u.plan = sp.id
-             GROUP BY sp.plan_name`
+            `SELECT sp.plan_name AS tier, COUNT(*) as count FROM users u LEFT JOIN subscriptions_plan sp ON u.plan = sp.id GROUP BY sp.plan_name`
         );
 
-        // Usage heatmap data
         const [heatmapData] = await db.query(
-            `SELECT 
-                HOUR(created_at) as hour,
-                DAYOFWEEK(created_at) as day,
-                COUNT(*) as count
-             FROM chat_history 
-             WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-             GROUP BY HOUR(created_at), DAYOFWEEK(created_at)`,
+            `SELECT HOUR(created_at) as hour, DAYOFWEEK(created_at) as day, COUNT(*) as count FROM chat_history WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY) GROUP BY HOUR(created_at), DAYOFWEEK(created_at)`,
             [period]
         );
 
@@ -142,11 +118,7 @@ const getGlobalAnalytics = async (req, res) => {
             usage_heatmap: heatmapData
         };
 
-        res.status(200).json({
-            status: "true",
-            message: "Global analytics retrieved successfully",
-            data: analytics
-        });
+        res.status(200).json({ status: "true", message: "Global analytics retrieved successfully", data: analytics });
     } catch (error) {
         console.error("Error fetching global analytics:", error);
         res.status(500).json({ status: "false", message: "Server error" });
@@ -227,26 +199,21 @@ const exportUserData = async (req, res) => {
 const getUsageSummary = async (req, res) => {
   try {
     const { start_date, end_date } = req.query;
-
-    // Default: last 30 days
     const startDate = start_date || '1970-01-01';
     const endDate = end_date || new Date().toISOString().slice(0, 10);
 
-    // Total messages
     const [messages] = await db.query(
-      SELECT COUNT(*) as total_messages FROM chat_history WHERE created_at BETWEEN ? AND ?,
+      `SELECT COUNT(*) as total_messages FROM chat_history WHERE created_at BETWEEN ? AND ?`,
       [startDate, endDate]
     );
 
-    // Total sessions
     const [sessions] = await db.query(
-      SELECT COUNT(*) as total_sessions FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      `SELECT COUNT(*) as total_sessions FROM chat_sessions WHERE created_at BETWEEN ? AND ?`,
       [startDate, endDate]
     );
 
-    // Total users active in this period
     const [activeUsers] = await db.query(
-      SELECT COUNT(DISTINCT user_id) as active_users FROM chat_sessions WHERE created_at BETWEEN ? AND ?,
+      `SELECT COUNT(DISTINCT user_id) as active_users FROM chat_sessions WHERE created_at BETWEEN ? AND ?`,
       [startDate, endDate]
     );
 
