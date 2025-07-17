@@ -58,19 +58,23 @@ const getAllUsersWithAnalytics = async (req, res) => {
 
         const totalUsers = countResult[0].total;
 
-      // Safely parse device_usage field
-    for (let user of users) {
-      try {
-        if (typeof user.device_usage === 'string') {
-          user.device_usage = JSON.parse(user.device_usage);
-        } else if (typeof user.device_usage !== 'object' || user.device_usage === null) {
-          user.device_usage = { web: 0, ios: 0, android: 0 };
-        }
-      } catch (e) {
-        console.warn(`Invalid JSON for device_usage (User ID ${user.id}):`, e.message);
+     for (let user of users) {
+  try {
+    if (user.device_usage) {
+      if (typeof user.device_usage === 'string' && user.device_usage.trim().startsWith('{')) {
+        user.device_usage = JSON.parse(user.device_usage);
+      } else if (typeof user.device_usage !== 'object') {
         user.device_usage = { web: 0, ios: 0, android: 0 };
       }
+    } else {
+      user.device_usage = { web: 0, ios: 0, android: 0 };
     }
+  } catch (e) {
+    console.warn(`Invalid JSON in device_usage (User ID ${user.id}):`, e.message);
+    user.device_usage = { web: 0, ios: 0, android: 0 };
+  }
+}
+
 
         res.status(200).json({
             status: "true",
