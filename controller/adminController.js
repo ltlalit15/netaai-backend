@@ -14,7 +14,8 @@ const getAllUsersWithAnalytics = async (req, res) => {
 
         if (search) {
             whereClause += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
-            params.push(%${search}%, %${search}%);
+            params.push(`%${search}%`, `%${search}%`);
+
         }
 
         if (status) {
