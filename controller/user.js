@@ -29,7 +29,7 @@ cloudinary.config({
 //Register User
 const signUp = async (req, res) => {
     try {
-        const { full_name, email, password, referredBy, phone_number , tier, role,status} = req.body;
+        const { full_name, email, password, referredBy, phone_number , tier, role,status, platform_started, last_active} = req.body;
 
         // Check if user already exists (by email)
         const [existingUser] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -42,16 +42,19 @@ const signUp = async (req, res) => {
 
         const platform = req.headers['x-platform'] || 'web';
          const is_admin = role === 'admin' ? true : false;
+        const currentTime = new Date(); // for last_active
  
 
         // Insert new user into the database
         const [result] = await db.query(
-            'INSERT INTO users (full_name, email, password, referredBy, phone_number, device_usage,tier, is_admin,status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-            [full_name, email, hashedPassword, referredBy, phone_number, JSON.stringify({ [platform]: 1 }),tier, is_admin,status]
+            'INSERT INTO users (full_name, email, password, referredBy, phone_number, device_usage,tier, is_admin,status, platform_started,
+        last_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+            [full_name, email, hashedPassword, referredBy, phone_number, JSON.stringify({ [platform]: 1 }),tier, is_admin,status, platform,
+        currentTime]
         );
 
         // Fetch the newly created user (excluding password)
-        const [newUser] = await db.query('SELECT id, full_name, email, referredBy, phone_number,tier, plan,device_usage, is_admin FROM users WHERE id = ?', [result.insertId]);
+        const [newUser] = await db.query('SELECT id, full_name, email, referredBy, phone_number,tier, plan,device_usage, platform_started, last_active, is_admin FROM users WHERE id = ?', [result.insertId]);
 
        
 
@@ -72,6 +75,8 @@ const signUp = async (req, res) => {
             : userRow.device_usage || {},
           status: userRow.status,
           is_admin: userRow.is_admin,
+          platform_started: userRow.platform_started,
+          last_active: userRow.last_active,
           token
         };
         // Send response
