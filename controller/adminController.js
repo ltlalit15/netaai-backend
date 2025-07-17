@@ -5,115 +5,85 @@ const nodemailer = require('nodemailer');
 
 // Get all users with analytics data
 const getAllUsersWithAnalytics = async (req, res) => {
-  try {
-    const { page = 1, limit = 20, search = '', status = '', tier = '' } = req.query;
-    const offset = (page - 1) * limit;
+    try {
+        const { page = 1, limit = 20, search = '', status = '', tier = '' } = req.query;
+        const offset = (page - 1) * limit;
 
-    let whereClause = 'WHERE 1=1';
-    const params = [];
+        let whereClause = 'WHERE 1=1';
+        const params = [];
 
-    if (search) {
-      whereClause += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
-    }
+        if (search) {
+            whereClause += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
+            params.push(%${search}%, %${search}%);
+        }
 
-    if (status) {
-      whereClause += ' AND u.status = ?';
-      params.push(status);
-    }
+        if (status) {
+            whereClause += ' AND u.status = ?';
+            params.push(status);
+        }
 
-    if (tier) {
-      whereClause += ' AND sp.plan_name = ?';
-      params.push(tier);
-    }
+        if (tier) {
+            whereClause += ' AND sp.plan_name = ?';
+            params.push(tier);
+        }
 
-    // ✅ Get users with analytics (added IFNULL to avoid AVG null crash)
-    const [users] = await db.query(
-      `SELECT 
-        u.id, u.full_name, u.email, u.status, sp.plan_name AS tier, u.created_at,
-        u.last_active, u.device_usage, u.platform_started,
-        COUNT(DISTINCT ch.id) as total_sessions,
-        IFNULL(AVG(sd.session_duration), 0) as avg_session_duration
-      FROM users u
-      LEFT JOIN subscriptions_plan sp ON u.plan = sp.id
-      LEFT JOIN chat_sessions ch ON u.id = ch.user_id
-      LEFT JOIN (
-        SELECT id, TIMESTAMPDIFF(MINUTE, MIN(created_at), MAX(created_at)) as session_duration
-        FROM chat_history 
-        GROUP BY id
-      ) sd ON ch.id = sd.id
-      ${whereClause}
-      GROUP BY u.id
-      ORDER BY u.created_at DESC
-      LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), offset]
-    );
+        // Get users with basic info, join plan
+        const [users] = await db.query(
+            `SELECT 
+                u.id, u.full_name, u.email, u.status, sp.plan_name AS tier, u.created_at,
+                u.last_active, u.device_usage, u.platform_started,
+                COUNT(DISTINCT ch.id) as total_sessions,
+                AVG(session_duration) as avg_session_duration
+            FROM users u
+            LEFT JOIN subscriptions_plan sp ON u.plan = sp.id
+            LEFT JOIN chat_sessions ch ON u.id = ch.user_id
+            LEFT JOIN (
+                SELECT id, 
+                       TIMESTAMPDIFF(MINUTE, MIN(created_at), MAX(created_at)) as session_duration
+                FROM chat_history 
+                GROUP BY id
+            ) sd ON ch.id = sd.id
+            ${whereClause}
+            GROUP BY u.id
+            ORDER BY u.created_at DESC
+            LIMIT ? OFFSET ?`,
+            [...params, parseInt(limit), offset]
+        );
 
-    // ✅ Total count for pagination
-    const [countResult] = await db.query(
-      `SELECT COUNT(*) as total FROM users u LEFT JOIN subscriptions_plan sp ON u.plan = sp.id ${whereClause}`,
-      params
-    );
+        // Get total count for pagination
+        const [countResult] = await db.query(
+            SELECT COUNT(*) as total FROM users u LEFT JOIN subscriptions_plan sp ON u.plan = sp.id ${whereClause},
+            params
+        );
 
-    const totalUsers = countResult[0].total;
+        const totalUsers = countResult[0].total;
 
-    // ✅ Safe parsing for device_usage with console logs
-    for (let user of users) {
-      try {
-        let usage = user.device_usage;
-        console.log(`📦 User ID: ${user.id}, Raw device_usage:`, usage);
-
-        if (!usage) {
-          console.log(`⚠️ No device_usage for user ID ${user.id}, setting default`);
-          user.device_usage = { web: 0, ios: 0, android: 0 };
-        } else if (typeof usage === 'string') {
-          try {
-            const parsed = JSON.parse(usage);
-            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-              user.device_usage = parsed;
-              console.log(`✅ Parsed string device_usage for user ID ${user.id}:`, parsed);
+        // Add device usage breakdown for each user
+        for (let user of users) {
+            if (user.device_usage) {
+                user.device_usage = JSON.parse(user.device_usage);
             } else {
-              throw new Error('Parsed device_usage is not a valid object');
+                user.device_usage = { web: 0, ios: 0, android: 0 };
             }
-          } catch (err) {
-            console.warn(`❌ JSON parse failed for user ID ${user.id}:`, err.message);
-            user.device_usage = { web: 0, ios: 0, android: 0 };
-          }
-        } else if (typeof usage === 'object' && usage !== null && !Array.isArray(usage)) {
-          user.device_usage = usage;
-          console.log(`🟢 device_usage already an object for user ID ${user.id}:`, usage);
-        } else {
-          console.warn(`⚠️ Invalid type of device_usage for user ID ${user.id}, setting default`);
-          user.device_usage = { web: 0, ios: 0, android: 0 };
         }
 
-      } catch (e) {
-        console.error(`🔥 Error handling device_usage for user ID ${user.id}:`, e.message);
-        user.device_usage = { web: 0, ios: 0, android: 0 };
-      }
+        res.status(200).json({
+            status: "true",
+            message: "Users retrieved successfully",
+            data: {
+                users,
+                pagination: {
+                    current_page: parseInt(page),
+                    total_pages: Math.ceil(totalUsers / limit),
+                    total_users: totalUsers,
+                    limit: parseInt(limit)
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ status: "false", message: "Server error" });
     }
-
-    // ✅ Final response
-    console.log(`📊 Sending ${users.length} users (page ${page}/${Math.ceil(totalUsers / limit)})`);
-
-    res.status(200).json({
-      status: "true",
-      message: "Users retrieved successfully",
-      data: {
-        users,
-        pagination: {
-          current_page: parseInt(page),
-          total_pages: Math.ceil(totalUsers / limit),
-          total_users: totalUsers,
-          limit: parseInt(limit)
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error("🔥 Error fetching users:", error);
-    res.status(500).json({ status: "false", message: "Server error" });
-  }
 };
 
 
