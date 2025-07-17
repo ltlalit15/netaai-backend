@@ -58,10 +58,17 @@ const getAllUsersWithAnalytics = async (req, res) => {
 
         const totalUsers = countResult[0].total;
 
-        // Add device usage breakdown for each user
+       // ✅ Safely parse device_usage for each user
         for (let user of users) {
             if (user.device_usage) {
-                user.device_usage = JSON.parse(user.device_usage);
+                if (typeof user.device_usage === 'string') {
+                    try {
+                        user.device_usage = JSON.parse(user.device_usage);
+                    } catch (e) {
+                        console.warn(`Invalid JSON in device_usage for user ID ${user.id}:`, e.message);
+                        user.device_usage = { web: 0, ios: 0, android: 0 };
+                    }
+                }
             } else {
                 user.device_usage = { web: 0, ios: 0, android: 0 };
             }
