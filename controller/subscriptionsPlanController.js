@@ -2,7 +2,7 @@ const db = require('../config'); // Assuming you are using a database configurat
 
 // Create a new subscription plan
 exports.createSubscriptionPlan = async (req, res) => {
-  const { plan_name, price, duration, description } = req.body;
+  const { plan_name, price, duration, description, daily_limit } = req.body;
 
   if (!plan_name || !price || !duration) {
     return res.status(400).json({ message: 'Missing required fields (plan_name, price, duration)' });
@@ -10,8 +10,8 @@ exports.createSubscriptionPlan = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      'INSERT INTO subscriptions_plan (plan_name, price, duration, description) VALUES (?, ?, ?, ?)',
-      [plan_name, price, duration, description || 'No description available']
+      'INSERT INTO subscriptions_plan (plan_name, price, duration, description, daily_limit) VALUES (?, ?, ?, ?, ?)',
+      [plan_name, price, duration, description || 'No description available', daily_limit]
     );
 
     res.status(201).json({
@@ -60,7 +60,7 @@ exports.getSubscriptionPlanById = async (req, res) => {
 // Update a subscription plan by ID
 exports.updateSubscriptionPlan = async (req, res) => {
   const { planId } = req.params;
-  const { plan_name, price, duration, description } = req.body;
+  const { plan_name, price, duration, description, daily_limit } = req.body;
 
   if (!plan_name || !price || !duration) {
     return res.status(400).json({ message: 'Missing required fields (plan_name, price, duration)' });
@@ -68,8 +68,8 @@ exports.updateSubscriptionPlan = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      'UPDATE subscriptions_plan SET plan_name = ?, price = ?, duration = ?, description = ? WHERE id = ?',
-      [plan_name, price, duration, description || 'No description available', planId]
+      'UPDATE subscriptions_plan SET plan_name = ?, price = ?, duration = ?, description = ?, daily_limit = ? WHERE id = ?',
+      [plan_name, price, duration, description || 'No description available', daily_limit, planId]
     );
 
     if (result.affectedRows === 0) {
