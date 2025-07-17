@@ -5,122 +5,107 @@ const nodemailer = require('nodemailer');
 
 // Get all users with analytics data
 const getAllUsersWithAnalytics = async (req, res) => {
-    try {
-        const { page = 1, limit = 20, search = '', status = '', tier = '' } = req.query;
-        const offset = (page - 1) * limit;
-
-        let whereClause = 'WHERE 1=1';
-        const params = [];
-
-        if (search) {
-            whereClause += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
-            params.push(`%${search}%`, `%${search}%`);
-        }
-
-        if (status) {
-            whereClause += ' AND u.status = ?';
-            params.push(status);
-        }
-
-        if (tier) {
-            whereClause += ' AND sp.plan_name = ?';
-            params.push(tier);
-        }
-
-        // Get users with basic info, join plan
-        const [users] = await db.query(
-            `SELECT 
-                u.id, u.full_name, u.email, u.status, sp.plan_name AS tier, u.created_at,
-                u.last_active, u.device_usage, u.platform_started,
-                COUNT(DISTINCT ch.id) as total_sessions,
-                AVG(session_duration) as avg_session_duration
-            FROM users u
-            LEFT JOIN subscriptions_plan sp ON u.plan = sp.id
-            LEFT JOIN chat_sessions ch ON u.id = ch.user_id
-            LEFT JOIN (
-                SELECT id, 
-                       TIMESTAMPDIFF(MINUTE, MIN(created_at), MAX(created_at)) as session_duration
-                FROM chat_history 
-                GROUP BY id
-            ) sd ON ch.id = sd.id
-            ${whereClause}
-            GROUP BY u.id
-            ORDER BY u.created_at DESC
-            LIMIT ? OFFSET ?`,
-            [...params, parseInt(limit), offset]
-        );
-
-        // Get total count for pagination
-        const [countResult] = await db.query(
-            `SELECT COUNT(*) as total FROM users u LEFT JOIN subscriptions_plan sp ON u.plan = sp.id ${whereClause}`,
-            params
-        );
-
-        const totalUsers = countResult[0].total;
-
-for (let user of users) {
   try {
-    const du = user.device_usage;
+    const { page = 1, limit = 20, search = '', status = '', tier = '' } = req.query;
+    const offset = (page - 1) * limit;
 
-    // ✅ 1. अगर device_usage null, undefined, या empty हो
-    if (!du) {
-      user.device_usage = { web: 0, ios: 0, android: 0 };
+    let whereClause = 'WHERE 1=1';
+    const params = [];
+
+    if (search) {
+      whereClause += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
     }
 
-    // ✅ 2. अगर device_usage string हो (e.g. '{"web":1}')
-    else if (typeof du === 'string') {
-      try {
-        const parsed = JSON.parse(du);
+    if (status) {
+      whereClause += ' AND u.status = ?';
+      params.push(status);
+    }
 
-        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-          user.device_usage = parsed; // valid object
+    if (tier) {
+      whereClause += ' AND sp.plan_name = ?';
+      params.push(tier);
+    }
+
+    // ✅ Get users with analytics (added IFNULL to avoid AVG null crash)
+    const [users] = await db.query(
+      `SELECT 
+        u.id, u.full_name, u.email, u.status, sp.plan_name AS tier, u.created_at,
+        u.last_active, u.device_usage, u.platform_started,
+        COUNT(DISTINCT ch.id) as total_sessions,
+        IFNULL(AVG(sd.session_duration), 0) as avg_session_duration
+      FROM users u
+      LEFT JOIN subscriptions_plan sp ON u.plan = sp.id
+      LEFT JOIN chat_sessions ch ON u.id = ch.user_id
+      LEFT JOIN (
+        SELECT id, TIMESTAMPDIFF(MINUTE, MIN(created_at), MAX(created_at)) as session_duration
+        FROM chat_history 
+        GROUP BY id
+      ) sd ON ch.id = sd.id
+      ${whereClause}
+      GROUP BY u.id
+      ORDER BY u.created_at DESC
+      LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), offset]
+    );
+
+    // ✅ Total count for pagination
+    const [countResult] = await db.query(
+      `SELECT COUNT(*) as total FROM users u LEFT JOIN subscriptions_plan sp ON u.plan = sp.id ${whereClause}`,
+      params
+    );
+
+    const totalUsers = countResult[0].total;
+
+    // ✅ Safe parsing for device_usage
+    for (let user of users) {
+      try {
+        const du = user.device_usage;
+
+        if (!du) {
+          user.device_usage = { web: 0, ios: 0, android: 0 };
+        } else if (typeof du === 'string') {
+          try {
+            const parsed = JSON.parse(du);
+            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+              user.device_usage = parsed;
+            } else {
+              throw new Error('Invalid parsed structure');
+            }
+          } catch (err) {
+            console.warn(`❌ Failed to parse device_usage (User ID ${user.id}): ${err.message}`);
+            user.device_usage = { web: 0, ios: 0, android: 0 };
+          }
+        } else if (typeof du === 'object' && du !== null && !Array.isArray(du)) {
+          user.device_usage = du;
         } else {
-          throw new Error('Parsed value is not a valid plain object');
+          user.device_usage = { web: 0, ios: 0, android: 0 };
         }
-      } catch (err) {
-        console.warn(`❌ Failed to parse device_usage (User ID ${user.id}): ${err.message}`);
+      } catch (e) {
+        console.warn(`❌ Invalid device_usage (User ID ${user.id}):`, e.message);
         user.device_usage = { web: 0, ios: 0, android: 0 };
       }
     }
 
-    // ✅ 3. अगर पहले से valid object हो
-    else if (typeof du === 'object' && du !== null && !Array.isArray(du)) {
-      user.device_usage = du;
-    }
+    // ✅ Response send
+    res.status(200).json({
+      status: "true",
+      message: "Users retrieved successfully",
+      data: {
+        users,
+        pagination: {
+          current_page: parseInt(page),
+          total_pages: Math.ceil(totalUsers / limit),
+          total_users: totalUsers,
+          limit: parseInt(limit)
+        }
+      }
+    });
 
-    // ❌ 4. अगर कोई invalid type हो (e.g. number, array, boolean)
-    else {
-      user.device_usage = { web: 0, ios: 0, android: 0 };
-    }
-
-  } catch (e) {
-    console.warn(`❌ Invalid device_usage (User ID ${user.id}):`, e.message);
-    user.device_usage = { web: 0, ios: 0, android: 0 };
+  } catch (error) {
+    console.error("🔥 Error fetching users:", error); // Debug info
+    res.status(500).json({ status: "false", message: "Server error" });
   }
-}
-
-
-
-
-
-
-        res.status(200).json({
-            status: "true",
-            message: "Users retrieved successfully",
-            data: {
-                users,
-                pagination: {
-                    current_page: parseInt(page),
-                    total_pages: Math.ceil(totalUsers / limit),
-                    total_users: totalUsers,
-                    limit: parseInt(limit)
-                }
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching users:", error);
-        res.status(500).json({ status: "false", message: "Server error" });
-    }
 };
 
 // Get detailed user profile
