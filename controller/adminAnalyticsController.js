@@ -184,13 +184,16 @@ const generateReport = async (req, res) => {
         if (format === 'csv') {
             const csv = convertToCSV(reportData);
             res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', attachment; filename="${type}-report-${new Date().toISOString().split('T')[0]}.csv");
+            res.setHeader(
+                'Content-Disposition',
+                `attachment; filename="${type}-report-${new Date().toISOString().split('T')[0]}.csv"`
+            );
             return res.send(csv);
         }
 
         res.status(200).json({
             status: "true",
-            message: ${type} report generated successfully,
+            message: `${type} report generated successfully`,
             data: reportData
         });
     } catch (error) {
