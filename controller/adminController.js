@@ -58,41 +58,48 @@ const getAllUsersWithAnalytics = async (req, res) => {
 
         const totalUsers = countResult[0].total;
 
-    for (let user of users) {
+for (let user of users) {
   try {
     const du = user.device_usage;
 
+    // ✅ 1. अगर device_usage null, undefined, या empty हो
     if (!du) {
-      // अगर null, undefined या empty है
       user.device_usage = { web: 0, ios: 0, android: 0 };
-    } else if (typeof du === 'string') {
-      // अगर string है तो parse करें
+    }
+
+    // ✅ 2. अगर device_usage string हो (e.g. '{"web":1}')
+    else if (typeof du === 'string') {
       try {
         const parsed = JSON.parse(du);
 
-        // Check करें कि parsed value valid object है
-        if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
-          user.device_usage = parsed;
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          user.device_usage = parsed; // valid object
         } else {
           throw new Error('Parsed value is not a valid plain object');
         }
       } catch (err) {
-        console.warn(`Failed to parse device_usage (User ID ${user.id}): ${err.message}`);
+        console.warn(`❌ Failed to parse device_usage (User ID ${user.id}): ${err.message}`);
         user.device_usage = { web: 0, ios: 0, android: 0 };
       }
-    } else if (typeof du === 'object' && du !== null && !Array.isArray(du)) {
-      // पहले से valid object है
+    }
+
+    // ✅ 3. अगर पहले से valid object हो
+    else if (typeof du === 'object' && du !== null && !Array.isArray(du)) {
       user.device_usage = du;
-    } else {
-      // अगर कुछ और गलत format है
+    }
+
+    // ❌ 4. अगर कोई invalid type हो (e.g. number, array, boolean)
+    else {
       user.device_usage = { web: 0, ios: 0, android: 0 };
     }
 
   } catch (e) {
-    console.warn(`Invalid device_usage (User ID ${user.id}):`, e.message);
+    console.warn(`❌ Invalid device_usage (User ID ${user.id}):`, e.message);
     user.device_usage = { web: 0, ios: 0, android: 0 };
   }
 }
+
+
 
 
 
