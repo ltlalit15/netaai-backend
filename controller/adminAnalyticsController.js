@@ -321,7 +321,8 @@ const convertToCSV = (data) => {
     for (const row of data) {
         const values = headers.map(header => {
             const value = row[header];
-            return typeof value === 'string' ? "${value.replace(/"/g, '""')}" : value;
+            return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
+
         });
         csvRows.push(values.join(','));
     }
