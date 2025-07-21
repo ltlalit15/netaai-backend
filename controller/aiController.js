@@ -222,6 +222,7 @@ try {
       const renamedFile = `NEC_Page_${entry.page}_${entry.file}`;
       return {
         nec_code: entry.nec_code,
+        description: entry.description || "No description available",
         file: renamedFile,
         url: `https://netaai-backend-production.up.railway.app/matched_pages/${folder}/${encodeURIComponent(renamedFile)}`
       };
