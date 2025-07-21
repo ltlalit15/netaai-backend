@@ -18,7 +18,8 @@ exports.filterNecCodeAndCopyPages = async (req, res) => {
     }
 
     // Paths
-    const baseDir = 'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main';
+    const baseDir = path.join(__dirname, '..');
+    //const baseDir = 'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main';
     const inputJsonPath = path.join(baseDir, 'nec_matches.json');
     const outputJsonPath = path.join(baseDir, 'filtered_nec_matches.json');
     const matchedPagesDir = path.join(baseDir, 'matched_pages');
