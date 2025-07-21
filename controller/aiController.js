@@ -201,8 +201,9 @@ try {
 
   console.log("🧠 Searching for NEC codes:", necCodes);
 
-  const necMatchesPath = path.join(__dirname, '..', '..', 'nec_matches.json'); // ✅ dynamic
-  const outputJsonPath = path.join(__dirname, '..', '..', 'filtered_nec_matches.json');
+  const necMatchesPath = path.join(__dirname, '..', 'nec_matches.json');
+
+  const outputJsonPath = path.join(__dirname, '..', 'filtered_nec_matches.json');
 
   if (fs.existsSync(necMatchesPath)) {
     const allMatches = JSON.parse(fs.readFileSync(necMatchesPath, 'utf-8'));
