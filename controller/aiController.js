@@ -190,13 +190,13 @@ Return the following structure ONLY:
     }
 
 
-   // 📦 This code assumes `necReferences` is available from OpenAI response
+// 📦 This code assumes `necReferences` is available from OpenAI response
 let pdfLinks = [];
 
 try {
   const necCodes = necReferences.map(ref => {
-    const cleaned = ref.code.replace(/^NEC\s*/i, '').trim();
-    return `Article ${cleaned}`.toLowerCase();
+    const cleaned = ref.code.replace(/^NEC\s*/i, '').trim(); // Remove "NEC " prefix
+    return `Article ${cleaned}`.toLowerCase(); // e.g., "Article 210"
   });
 
   console.log("🧠 Searching for NEC codes:", necCodes);
@@ -207,20 +207,21 @@ try {
   if (fs.existsSync(necMatchesPath)) {
     const allMatches = JSON.parse(fs.readFileSync(necMatchesPath, 'utf-8'));
 
+    // Filter based on match with NEC code
     const filteredMatches = allMatches.filter(entry => {
       const entryCode = (entry.nec_code || '').trim().toLowerCase();
-      return necCodes.some(code => (
+      return necCodes.some(code =>
         entryCode === code || entryCode.includes(code) || code.includes(entryCode)
-      ));
+      );
     });
 
     console.log("✅ Matched NEC Entries:", filteredMatches.length);
 
-    // Group by nec_code
+    // Group matches by nec_code
     const groupedLinks = {};
 
     filteredMatches.forEach(entry => {
-      const necCode = entry.nec_code || 'Unknown';
+      const necCode = (entry.nec_code || 'Unknown').trim(); // Preserve original case like "Article 210"
       const folder = (entry.folder || '').replace(/[\\/]/g, '_');
       const renamedFile = `NEC_Page_${entry.page}_${entry.file}`;
       const url = `https://netaai-backend-production.up.railway.app/matched_pages/${folder}/${encodeURIComponent(renamedFile)}`;
@@ -239,8 +240,10 @@ try {
       groupedLinks[necCode].urls.push(url);
     });
 
+    // Convert grouped object to array
     pdfLinks = Object.values(groupedLinks);
 
+    // Save filtered matches (optional)
     fs.writeFileSync(outputJsonPath, JSON.stringify(filteredMatches, null, 2), 'utf-8');
   } else {
     console.warn("❌ nec_matches.json not found.");
