@@ -12,6 +12,7 @@ const planRoutes = require('./routes/subscriptionRoutes');
 const ipRoutes = require('./routes/ipRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const necRoutes = require('./routes/necRoutes');
+const stripeRoutes = require('./routes/stripeRoutes');
 
  
 
@@ -96,6 +97,7 @@ app.use('/api/plan', planRoutes);
 app.use('/api/ip', ipRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/nec', necRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 // Admin dashboard routes
 app.get('/admin', (req, res) => {
