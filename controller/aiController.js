@@ -189,17 +189,20 @@ Return the following structure ONLY:
       }
     }
 
+
+    // 📦 This code assumes `necReferences` is available from OpenAI response
 let pdfLinks = [];
 
 try {
   const necCodes = necReferences.map(ref => {
-    const cleaned = ref.code.replace(/^NEC\s*/i, '').trim(); // remove 'NEC' prefix if any
-    return cleaned.toLowerCase(); // keep full like 'article 210'
+    const cleaned = ref.code.replace(/^NEC\s*/i, '').trim();
+    return `Article ${cleaned}`.toLowerCase();
   });
 
-  console.log("🧠 Searching for NEC Article codes:", necCodes);
+  console.log("🧠 Searching for NEC codes:", necCodes);
 
   const necMatchesPath = path.join(__dirname, '..', 'nec_matches.json');
+
   const outputJsonPath = path.join(__dirname, '..', 'filtered_nec_matches.json');
 
   if (fs.existsSync(necMatchesPath)) {
@@ -207,9 +210,9 @@ try {
 
     const filteredMatches = allMatches.filter(entry => {
       const entryCode = (entry.nec_code || '').trim().toLowerCase();
-      return necCodes.some(code =>
-        entryCode.includes(code) || code.includes(entryCode)
-      );
+      return necCodes.some(code => (
+        entryCode === code || entryCode.includes(code) || code.includes(entryCode)
+      ));
     });
 
     console.log("✅ Matched NEC Entries:", filteredMatches.length);
