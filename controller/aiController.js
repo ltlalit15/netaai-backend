@@ -190,7 +190,7 @@ Return the following structure ONLY:
     }
 
 
-    // 📦 This code assumes `necReferences` is available from OpenAI response
+   // 📦 This code assumes `necReferences` is available from OpenAI response
 let pdfLinks = [];
 
 try {
@@ -202,7 +202,6 @@ try {
   console.log("🧠 Searching for NEC codes:", necCodes);
 
   const necMatchesPath = path.join(__dirname, '..', 'nec_matches.json');
-
   const outputJsonPath = path.join(__dirname, '..', 'filtered_nec_matches.json');
 
   if (fs.existsSync(necMatchesPath)) {
@@ -217,16 +216,30 @@ try {
 
     console.log("✅ Matched NEC Entries:", filteredMatches.length);
 
-    pdfLinks = filteredMatches.map(entry => {
+    // Group by nec_code
+    const groupedLinks = {};
+
+    filteredMatches.forEach(entry => {
+      const necCode = entry.nec_code || 'Unknown';
       const folder = (entry.folder || '').replace(/[\\/]/g, '_');
       const renamedFile = `NEC_Page_${entry.page}_${entry.file}`;
-      return {
-        nec_code: entry.nec_code,
-        description: entry.description || "No description available",
-        file: renamedFile,
-        url: `https://netaai-backend-production.up.railway.app/matched_pages/${folder}/${encodeURIComponent(renamedFile)}`
-      };
+      const url = `https://netaai-backend-production.up.railway.app/matched_pages/${folder}/${encodeURIComponent(renamedFile)}`;
+
+      if (!groupedLinks[necCode]) {
+        groupedLinks[necCode] = {
+          nec_code: necCode,
+          descriptions: [],
+          files: [],
+          urls: []
+        };
+      }
+
+      groupedLinks[necCode].descriptions.push(entry.description || "No description available");
+      groupedLinks[necCode].files.push(renamedFile);
+      groupedLinks[necCode].urls.push(url);
     });
+
+    pdfLinks = Object.values(groupedLinks);
 
     fs.writeFileSync(outputJsonPath, JSON.stringify(filteredMatches, null, 2), 'utf-8');
   } else {
