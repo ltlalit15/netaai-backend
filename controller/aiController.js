@@ -201,10 +201,8 @@ try {
 
   console.log("🧠 Searching for NEC codes:", necCodes);
 
-  const necMatchesPath = path.join(
-    'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main',
-    'nec_matches.json'
-  );
+  const necMatchesPath = path.join(__dirname, '..', '..', 'nec_matches.json'); // ✅ dynamic
+  const outputJsonPath = path.join(__dirname, '..', '..', 'filtered_nec_matches.json');
 
   if (fs.existsSync(necMatchesPath)) {
     const allMatches = JSON.parse(fs.readFileSync(necMatchesPath, 'utf-8'));
@@ -220,18 +218,14 @@ try {
 
     pdfLinks = filteredMatches.map(entry => {
       const folder = (entry.folder || '').replace(/[\\/]/g, '_');
-      const renamedFile = `NEC_Page_${entry.page}_${entry.file}`; // ✅ Renamed file used in copy script
+      const renamedFile = `NEC_Page_${entry.page}_${entry.file}`;
       return {
         nec_code: entry.nec_code,
         file: renamedFile,
-        url: `https://hrb5wx2v-5008.inc1.devtunnels.ms/matched_pages/${folder}/${encodeURIComponent(renamedFile)}`
+        url: `https://netaai-backend-production.up.railway.app/matched_pages/${folder}/${encodeURIComponent(renamedFile)}`
       };
     });
 
-    const outputJsonPath = path.join(
-      'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main',
-      'filtered_nec_matches.json'
-    );
     fs.writeFileSync(outputJsonPath, JSON.stringify(filteredMatches, null, 2), 'utf-8');
   } else {
     console.warn("❌ nec_matches.json not found.");
