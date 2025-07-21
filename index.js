@@ -107,9 +107,10 @@ app.get('/admin/login', (req, res) => {
 });
 
 // ✅ Serve matched_pages PDFs
-const matchedPagesPath = path.join(
-  'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main/matched_pages'
-);
+//const matchedPagesPath = path.join(
+//  'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main/matched_pages'
+//);
+const matchedPagesPath = path.join(__dirname, 'matched_pages');
 app.use('/matched_pages', express.static(matchedPagesPath));
 
 
