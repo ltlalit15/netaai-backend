@@ -11,6 +11,7 @@ const aiRoutes = require('./routes/aiRoutes');
 const planRoutes = require('./routes/subscriptionRoutes');
 const ipRoutes = require('./routes/ipRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const necRoutes = require('./routes/necRoutes');
 
  
 
@@ -94,6 +95,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/plan', planRoutes);
 app.use('/api/ip', ipRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/nec', necRoutes);
 
 // Admin dashboard routes
 app.get('/admin', (req, res) => {
@@ -103,6 +105,12 @@ app.get('/admin', (req, res) => {
 app.get('/admin/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
 });
+
+// ✅ Serve matched_pages PDFs
+const matchedPagesPath = path.join(
+  'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main/matched_pages'
+);
+app.use('/matched_pages', express.static(matchedPagesPath));
 
 
  
