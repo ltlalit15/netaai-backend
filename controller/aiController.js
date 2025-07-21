@@ -186,9 +186,61 @@ Return the following structure ONLY:
       }
     }
 
+
+    // 📦 This code assumes `necReferences` is available from OpenAI response
+let pdfLinks = [];
+
+try {
+  const necCodes = necReferences.map(ref => {
+    const cleaned = ref.code.replace(/^NEC\s*/i, '').trim();
+    return `section ${cleaned}`.toLowerCase();
+  });
+
+  console.log("🧠 Searching for NEC codes:", necCodes);
+
+  const necMatchesPath = path.join(
+    'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main',
+    'nec_matches.json'
+  );
+
+  if (fs.existsSync(necMatchesPath)) {
+    const allMatches = JSON.parse(fs.readFileSync(necMatchesPath, 'utf-8'));
+
+    const filteredMatches = allMatches.filter(entry => {
+      const entryCode = (entry.nec_code || '').trim().toLowerCase();
+      return necCodes.some(code => (
+        entryCode === code || entryCode.includes(code) || code.includes(entryCode)
+      ));
+    });
+
+    console.log("✅ Matched NEC Entries:", filteredMatches.length);
+
+    pdfLinks = filteredMatches.map(entry => {
+      const folder = (entry.folder || '').replace(/[\\/]/g, '_');
+      const renamedFile = `NEC_Page_${entry.page}_${entry.file}`; // ✅ Renamed file used in copy script
+      return {
+        nec_code: entry.nec_code,
+        file: renamedFile,
+        url: `https://hrb5wx2v-5008.inc1.devtunnels.ms/matched_pages/${folder}/${encodeURIComponent(renamedFile)}`
+      };
+    });
+
+    const outputJsonPath = path.join(
+      'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main',
+      'filtered_nec_matches.json'
+    );
+    fs.writeFileSync(outputJsonPath, JSON.stringify(filteredMatches, null, 2), 'utf-8');
+  } else {
+    console.warn("❌ nec_matches.json not found.");
+  }
+} catch (err) {
+  console.warn("❌ PDF Matching failed:", err.message);
+}
+
      res.json({
       ...formatResponse(explanation, stepByStep, normalizedNecRefs, videos),
-      suggestions: suggestions
+      suggestions: suggestions,
+      pdf_links: pdfLinks
     });
 
   } catch (err) {
