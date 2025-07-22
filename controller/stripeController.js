@@ -69,7 +69,7 @@ exports.createStripePayment = async (req, res) => {
       `;
 
       try {
-        await db.promise().query(insertQuery, [
+        await db.query(insertQuery, [
           userId,
           planId,
           startDate,
@@ -84,7 +84,7 @@ exports.createStripePayment = async (req, res) => {
       // 3. Update user’s plan
       const updateQuery = 'UPDATE users SET plan = ? WHERE id = ?';
       try {
-        const [result] = await db.promise().query(updateQuery, [planId, userId]);
+        const [result] = await db.query(updateQuery, [planId, userId]);
 
         if (result.affectedRows === 0) {
           return res.status(404).json({ error: 'User not found' });
