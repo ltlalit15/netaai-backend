@@ -43,20 +43,49 @@ exports.createStripePayment = async (req, res) => {
       return res.status(400).json({ error: 'Invalid or missing amount' });
     }
 
-    // 1. Create Stripe PaymentIntent
+    // 1. Create Stripe PaymentIntent with userId and planId in metadata
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: currency || 'usd',
-      metadata: metadata || {},
+      metadata: {
+        ...metadata,
+        userId: userId || 'unknown',
+        planId: planId || 'none',
+      },
       description: description || '',
     });
 
-    // 2. Update user's plan in MySQL (if userId and planId are given)
+    // 2. Insert into subscriptions table
+    if (userId && planId) {
+      const startDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const endDateObj = new Date();
+      endDateObj.setDate(endDateObj.getDate() + 30); // 30-day duration
+      const endDate = endDateObj.toISOString().split('T')[0];
+
+      const insertQuery = `
+        INSERT INTO subscriptions 
+        (user_id, plan_id, start_date, end_date, price, status, payment_status, payment_method)
+        VALUES (?, ?, ?, ?, ?, 'active', 'pending', ?)
+      `;
+
+      db.query(
+        insertQuery,
+        [userId, planId, startDate, endDate, amount / 100, 'stripe'],
+        (insertErr) => {
+          if (insertErr) {
+            console.error('DB Insert Error (subscriptions):', insertErr);
+            // Do not fail payment if subscription record fails — just log
+          }
+        }
+      );
+    }
+
+    // 3. Update user's plan (optional)
     if (userId && planId) {
       const updateQuery = 'UPDATE users SET plan = ? WHERE id = ?';
       db.query(updateQuery, [planId, userId], (err, result) => {
         if (err) {
-          console.error('DB Error:', err);
+          console.error('DB Error (user update):', err);
           return res.status(500).json({ error: 'Failed to update user plan' });
         }
 
@@ -64,18 +93,19 @@ exports.createStripePayment = async (req, res) => {
           return res.status(404).json({ error: 'User not found' });
         }
 
-        // 3. Return success with payment intent
-        res.status(200).json({
+        return res.status(200).json({
           clientSecret: paymentIntent.client_secret,
           description: paymentIntent.description,
-          message: 'Payment Intent created and user plan updated successfully',
+          paymentIntentId: paymentIntent.id,
+          message: 'Payment Intent created and subscription added',
         });
       });
     } else {
-      // If no plan update needed
-      res.status(200).json({
+      // If no userId or planId, just return the PaymentIntent
+      return res.status(200).json({
         clientSecret: paymentIntent.client_secret,
         description: paymentIntent.description,
+        paymentIntentId: paymentIntent.id,
         message: 'Payment Intent created successfully',
       });
     }
@@ -84,7 +114,6 @@ exports.createStripePayment = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 
 
