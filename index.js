@@ -24,7 +24,7 @@ app.set('views', path.join(__dirname, 'views')); // Ensure correct path to views
 //app.use(cors());
 
 app.use(cors({
-    origin: ['https://askneta.com', 'http://localhost:5173'],
+    origin: ['https://askneta.com', 'http://localhost:5174'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],  // Allow all HTTP methods
     allowedHeaders: ['Content-Type', 'Authorization']  // Allow necessary headers
 }));
