@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const necController = require('../controller/necController');
+const mergeController = require('../controller/mergeController');
 
-router.post('/filterNecCodeAndCopyPages', necController.filterNecCodeAndCopyPages);
-
+router.post('/mergeArticlePDFs', mergeController.mergeArticlePDFs);
 
 module.exports = router;
