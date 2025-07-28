@@ -190,17 +190,21 @@ Return the following structure ONLY:
     }
 
 
-    // 📎 Merge Article PDF if applicable
-    let pdf_link = null;
-    const articleMatch = message.match(/\b\d+\b/);
-    const articleNumber = articleMatch ? articleMatch[0] : null;
+    // 📎 Merge Article PDFs based on NEC references
+    const uniqueArticles = new Set();
+    for (const ref of necReferences) {
+      const match = ref.code.match(/^(\d+)\./); // get "210" from "210.8(A)"
+      if (match) uniqueArticles.add(match[1]);
+    }
 
-    if (articleNumber) {
+    let pdfLinks = [];
+
+    for (const article of uniqueArticles) {
       const PDFMerger = (await import('pdf-merger-js')).default;
       const baseDir = path.join(__dirname, '..');
-      const sourceFolder = path.join(baseDir, 'nec-pdfs', `article ${articleNumber}`);
+      const sourceFolder = path.join(baseDir, 'nec-pdfs', `article ${article}`);
       const outputFolder = path.join(baseDir, 'mergedpdf');
-      const outputFileName = `article ${articleNumber}_merged.pdf`;
+      const outputFileName = `article ${article}_merged.pdf`;
       const outputPath = path.join(outputFolder, outputFileName);
 
       try {
@@ -218,14 +222,16 @@ Return the following structure ONLY:
             }
             await merger.save(outputPath);
 
-            pdf_link = `https://netaai-backend-production.up.railway.app/mergedpdf/${encodeURIComponent(outputFileName)}`;
+            pdfLinks.push({
+              article: article,
+              link: `https://netaai-backend-production.up.railway.app/mergedpdf/${encodeURIComponent(outputFileName)}`
+            });
           }
         }
       } catch (mergeErr) {
-        console.error('PDF merge error:', mergeErr.message);
+        console.error(`PDF merge error for article ${article}:`, mergeErr.message);
       }
     }
-
 
 
 
@@ -233,7 +239,7 @@ Return the following structure ONLY:
      res.json({
       ...formatResponse(explanation, stepByStep, normalizedNecRefs, videos),
       suggestions: suggestions,
-      pdf_link: pdf_link
+      pdf_links: pdfLinks
      
     });
 
