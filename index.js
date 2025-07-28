@@ -12,7 +12,7 @@ const planRoutes = require('./routes/subscriptionRoutes');
 const ipRoutes = require('./routes/ipRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 //const analyticsRoutes = require('./routes/analyticsRoutes');
-const trelloRoutes = require('./routes/trelloRoutes');
+//const trelloRoutes = require('./routes/trelloRoutes');
 const mergeRoutes = require('./routes/mergeRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
  
@@ -97,7 +97,7 @@ app.use('/api/plan', planRoutes);
 app.use('/api/ip', ipRoutes);
 app.use('/api/admin', adminRoutes);
 //app.use('/api/analytics', analyticsRoutes);
-app.use('/api/trello', trelloRoutes);
+//app.use('/api/trello', trelloRoutes);
 app.use('/api/merge', mergeRoutes);
 app.use('/api/stripe', stripeRoutes);
 
