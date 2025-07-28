@@ -20,6 +20,7 @@
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
     "openai": "^4.103.0",
+    "pdf-merger-js": "^5.1.2",
     "router": "^2.0.0",
     "stripe": "^18.3.0"
   }
