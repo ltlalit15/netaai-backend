@@ -5,8 +5,10 @@ const multer = require('multer');
 const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
-const userRoutes = require('./routes/userRoutes');
 const fileUpload = require('express-fileupload');
+
+// Routes
+const userRoutes = require('./routes/userRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const planRoutes = require('./routes/subscriptionRoutes');
 const ipRoutes = require('./routes/ipRoutes');
@@ -14,37 +16,32 @@ const adminRoutes = require('./routes/adminRoutes');
 const mergeRoutes = require('./routes/mergeRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
 
- 
-
 const db = require('./config');
 const app = express();
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views')); // Ensure correct path to views
-// Middleware
-//app.use(cors());
 
+// Set view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// ✅ CORS configuration
 app.use(cors({
     origin: ['https://askneta.com', 'http://localhost:5173'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],  // Allow all HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization']  // Allow necessary headers
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// ✅ Increase Payload Limit for Base64 Images
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
- 
-const tempDir = path.join(__dirname, 'tmp');
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+
+// ✅ Body & file parsing
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'upload')));
+
+// ✅ Temp file upload support
+const tempDir = path.join(__dirname, 'tmp');
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: tempDir,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: 50 * 1024 * 1024 },
   safeFileNames: true,
   preserveExtension: 4,
   abortOnLimit: true,
@@ -52,23 +49,26 @@ app.use(fileUpload({
     res.status(400).send('File size limit exceeded');
   }
 }));
- 
- // 
-// ✅ Upload folder static
+
+// ✅ Static file serving
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'upload')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ✅ Serve merged PDFs from Railway-safe /tmp folder
+app.use('/mergedpdf', express.static('/tmp/mergedpdf'));
+
+// ✅ Session setup
 app.use(
     session({
-        secret: 'your_secret_key', // Change this to a secure key
+        secret: 'your_secret_key', // Change this securely
         resave: false,
         saveUninitialized: true,
-        cookie: { maxAge: 86400000 }, // 1 day expiration
+        cookie: { maxAge: 86400000 }
     })
 );
 
-
-
-//app.use(express.static(path.join(__dirname, 'public')));
-
+// ✅ Image serving route
 app.get('/upload/:imageName', (req, res) => {
     const imagePath = path.join(__dirname, 'upload', req.params.imageName);
     res.sendFile(imagePath, (err) => {
@@ -79,19 +79,8 @@ app.get('/upload/:imageName', (req, res) => {
     });
 });
 
-
-
-
-  
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
- 
-
-// createChatTable();
-
+// ✅ API routes
 app.use('/api/user', userRoutes);
-// app.use('/api/openai', openaiRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/plan', planRoutes);
 app.use('/api/ip', ipRoutes);
@@ -99,7 +88,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/merge', mergeRoutes);
 app.use('/api/stripe', stripeRoutes);
 
-// Admin dashboard routes
+// ✅ Admin dashboard static pages
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
 });
@@ -108,22 +97,8 @@ app.get('/admin/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
 });
 
-// ✅ Serve matched_pages PDFs
-//const matchedPagesPath = path.join(
-//  'C:/Users/Muhammad Rehan/Downloads/netaai-backend-main (1)/netaai-backend-main/matched_pages'
-//);
-const matchedPagesPath = path.join(__dirname, 'matched_pages');
-app.use('/matched_pages', express.static(matchedPagesPath));
-
-
- 
-
-// app.use('/api/user', authRoutes);
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-
-
-app.listen(5008, () => {
-    console.log('Server connected on port 5008');
+// ✅ Start server
+const PORT = process.env.PORT || 5008;
+app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
 });
