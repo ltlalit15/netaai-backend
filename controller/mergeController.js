@@ -5,7 +5,7 @@ const fse = require('fs-extra');
 const path = require('path');
 
 
-const PDFMerger = require('pdf-merger-js').default; // 👈 FIXED LINE
+const PDFMerger = require('pdf-merger-js') // 👈 FIXED LINE
 
 exports.mergeArticlePDFs = async (req, res) => {
   try {
