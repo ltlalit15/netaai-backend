@@ -190,56 +190,11 @@ Return the following structure ONLY:
     }
 
 
-    // 📎 Merge Article PDFs based on NEC references
-    const uniqueArticles = new Set();
-    for (const ref of necReferences) {
-      const match = ref.code.match(/^(\d+)\./); // get "210" from "210.8(A)"
-      if (match) uniqueArticles.add(match[1]);
-    }
-
-    let pdfLinks = [];
-
-    for (const article of uniqueArticles) {
-      const PDFMerger = (await import('pdf-merger-js')).default;
-      const baseDir = path.join(__dirname, '..');
-      const sourceFolder = path.join(baseDir, 'nec-pdfs', `article ${article}`);
-      const outputFolder = path.join(baseDir, 'mergedpdf');
-      const outputFileName = `article ${article}_merged.pdf`;
-      const outputPath = path.join(outputFolder, outputFileName);
-
-      try {
-        if (fs.existsSync(sourceFolder)) {
-          const pdfFiles = fs.readdirSync(sourceFolder)
-            .filter(f => f.toLowerCase().endsWith('.pdf'))
-            .sort();
-
-          if (pdfFiles.length > 0) {
-            fs.mkdirSync(outputFolder, { recursive: true });
-
-            const merger = new PDFMerger();
-            for (const file of pdfFiles) {
-              await merger.add(path.join(sourceFolder, file));
-            }
-            await merger.save(outputPath);
-
-            pdfLinks.push({
-              article: article,
-              link: `https://netaai-backend-production.up.railway.app/mergedpdf/${encodeURIComponent(outputFileName)}`
-            });
-          }
-        }
-      } catch (mergeErr) {
-        console.error(`PDF merge error for article ${article}:`, mergeErr.message);
-      }
-    }
-
-
-
-
+   
      res.json({
       ...formatResponse(explanation, stepByStep, normalizedNecRefs, videos),
-      suggestions: suggestions,
-      pdf_links: pdfLinks
+      suggestions: suggestions
+     // pdf_links: pdfLinks
      
     });
 
