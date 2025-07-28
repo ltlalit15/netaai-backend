@@ -190,12 +190,50 @@ Return the following structure ONLY:
     }
 
 
+    // 📎 Merge Article PDF if applicable
+    let pdf_link = null;
+    const articleMatch = message.match(/\b\d+\b/);
+    const articleNumber = articleMatch ? articleMatch[0] : null;
+
+    if (articleNumber) {
+      const PDFMerger = (await import('pdf-merger-js')).default;
+      const baseDir = path.join(__dirname, '..');
+      const sourceFolder = path.join(baseDir, 'nec-pdfs', `article ${articleNumber}`);
+      const outputFolder = path.join(baseDir, 'mergedpdf');
+      const outputFileName = `article ${articleNumber}_merged.pdf`;
+      const outputPath = path.join(outputFolder, outputFileName);
+
+      try {
+        if (fs.existsSync(sourceFolder)) {
+          const pdfFiles = fs.readdirSync(sourceFolder)
+            .filter(f => f.toLowerCase().endsWith('.pdf'))
+            .sort();
+
+          if (pdfFiles.length > 0) {
+            fs.mkdirSync(outputFolder, { recursive: true });
+
+            const merger = new PDFMerger();
+            for (const file of pdfFiles) {
+              await merger.add(path.join(sourceFolder, file));
+            }
+            await merger.save(outputPath);
+
+            pdf_link = `https://netaai-backend-production.up.railway.app/mergedpdf/${encodeURIComponent(outputFileName)}`;
+          }
+        }
+      } catch (mergeErr) {
+        console.error('PDF merge error:', mergeErr.message);
+      }
+    }
+
+
 
 
 
      res.json({
       ...formatResponse(explanation, stepByStep, normalizedNecRefs, videos),
-      suggestions: suggestions
+      suggestions: suggestions,
+      pdf_link: pdf_link
      
     });
 
