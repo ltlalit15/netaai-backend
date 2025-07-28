@@ -104,7 +104,7 @@ Return the following structure ONLY:
       })),
       { role: "user", content: message }
     ];
-    const OPENAI_API_KEY="c2stcHJvai1vcjVsRFh4MDVORDJvZnVpd184VGliNFdXQk94SGNWejBmbnBEOFdRMUxxbGJLNW1ZN0R1ZWF4dFFRN3lNYU81THpWekZsZkRvYVQzQmxia0ZKdi1oR3E5VXhKOGJvaHlwbzA4TEY4ZGtDRnAtNmQ0YmIzV3hsNTdGY3RXTUQyZWR0N1cyOUliU0RsaEExZGxILTdTSzdJLVoya0E="
+    const OPENAI_API_KEY="c2stcHJvai1LTEFLNUdRSkhPbkxwTEM5NHZWblEyUjd2RjIxeEYyTWxHUHN4cGIyVlpkLXNfRjl4dTVod1FYcUVBU2ROd3JsQ1ZLc1RtNEU0NFQzQmxia0ZKLUhOV284eUtiRTFmQUk0QzRBd1NZd0xURlBQV3ZPMUhfdHVBWkhaSnNqMDZqWGF6RFJMR0NRVElYM1FfMFdUZm5qTUQtbjVwUUE="
     const decodedKey = Buffer.from(OPENAI_API_KEY, 'base64').toString('utf8');
      console.log(decodedKey);
 
